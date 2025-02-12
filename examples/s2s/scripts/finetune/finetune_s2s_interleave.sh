@@ -1,7 +1,8 @@
 #!/bin/bash
 export OMP_NUM_THREADS=1
-# export CUDA_VISIBLE_DEVICES=0
-export CUDA_VISIBLE_DEVICES=0,1
+export CUDA_VISIBLE_DEVICES=2
+# export CUDA_VISIBLE_DEVICES=0,1
+# export CUDA_VISIBLE_DEVICES=2,3
 # export CUDA_VISIBLE_DEVICES=0,1,2,3
 # export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export TOKENIZERS_PARALLELISM=false
@@ -22,7 +23,7 @@ mel_size=80                         # 80 128 ( only whisper-large-v3 supports 12
 llm_dim=896                         # 896 1536 2048 3584  -> 0.5B 1.5B 3B 7B
 
 # vocabulary settings
-code_layer=1                        # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 
+code_layer=0                        # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers  0 for interleaved paradigm
 total_audio_vocabsize=4160          # the vocab size of the codec token
 llm_vocabsize=152000                # the vocab size of the LLM model (Qwen2 here)
 total_vocabsize=$((total_audio_vocabsize + llm_vocabsize))
@@ -39,6 +40,9 @@ val_data_path=/home/wenxi/mydisk/data/VoiceAssistant-400K-v2-arrow
 load_from_cache_file=true           # set to true if you have already generated the cache file, otherwise set to false
 
 # training settings
+modeling_paradigm=interleaved
+interleaved_text_token_num=12
+interleaved_audio_token_num=36
 batch_size_training=3
 use_fp16=true
 use_peft=false
@@ -58,11 +62,11 @@ split_size=0.01
 # fi
 
 exp_name="gpu${num_gpus}-btz${batch_size_training}-lr${lr}-parallel"
-# exp_name="debug"
+exp_name="debug"
 wandb_entity_name=1029713857
 wandb_project_name=SLAM-Omni-Interleaved
 
-home_dir=/home/wenxi/mydisk/exp/SLAM-Omni
+home_dir=/home/wenxi/mydisk/exp/SLAM-Omni/debug
 output_dir=$home_dir/$exp_name
 # ckpt_path=/valleblob/v-wenxichen/exp/asr/asr-Qwen2-0.5b-gpu4-btz6-lr1e-4-fp16-epochs10-whisper_small-latency5-group3/s2s_epoch_5_step_3596  # this line is for resuming training
 
@@ -103,6 +107,9 @@ hydra.run.dir=$output_dir \
 ++dataset_config.code_type=$code_type \
 ++dataset_config.num_latency_tokens=$num_latency_tokens \
 ++dataset_config.do_layershift=$do_layershift \
+++dataset_config.modeling_paradigm=$modeling_paradigm \
+++dataset_config.interleaved_text_token_num=$interleaved_text_token_num \
+++dataset_config.interleaved_audio_token_num=$interleaved_audio_token_num \
 ++train_config.model_name=s2s \
 ++train_config.num_epochs=$num_epochs \
 ++train_config.freeze_encoder=true \
@@ -119,6 +126,9 @@ hydra.run.dir=$output_dir \
 ++train_config.use_fp16=$use_fp16 \
 ++train_config.task_type=$task_type \
 ++train_config.use_peft=$use_peft \
+++train_config.modeling_paradigm=$modeling_paradigm \
+++train_config.interleaved_text_token_num=$interleaved_text_token_num \
+++train_config.interleaved_audio_token_num=$interleaved_audio_token_num \
 ++metric=acc \
 ++log_config.use_wandb=$use_wandb \
 ++log_config.wandb_entity_name=$wandb_entity_name \
@@ -161,4 +171,4 @@ fi
 # --node_rank=$node_rank \
 # --master_addr=$master_addr \
 
-# bash examples/s2s/scripts/finetune/finetune_s2s.sh
+# bash examples/s2s/scripts/finetune/finetune_s2s_interleave.sh
