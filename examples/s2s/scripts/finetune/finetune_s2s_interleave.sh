@@ -1,8 +1,8 @@
 #!/bin/bash
 export OMP_NUM_THREADS=1
-export CUDA_VISIBLE_DEVICES=2
+# export CUDA_VISIBLE_DEVICES=2
 # export CUDA_VISIBLE_DEVICES=0,1
-# export CUDA_VISIBLE_DEVICES=2,3
+export CUDA_VISIBLE_DEVICES=2,3
 # export CUDA_VISIBLE_DEVICES=0,1,2,3
 # export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export TOKENIZERS_PARALLELISM=false
@@ -61,12 +61,12 @@ split_size=0.01
 #     exp_name="${llm_name}-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-fp16-epochs${num_epochs}-whisper_${whisper_size}-group${code_layer}"
 # fi
 
-exp_name="gpu${num_gpus}-btz${batch_size_training}-lr${lr}-parallel"
-exp_name="debug"
+exp_name="gpu${num_gpus}-btz${batch_size_training}-lr${lr}-interleave_text${interleaved_text_token_num}_audio${interleaved_audio_token_num}"
+# exp_name="debug"
 wandb_entity_name=1029713857
 wandb_project_name=SLAM-Omni-Interleaved
 
-home_dir=/home/wenxi/mydisk/exp/SLAM-Omni/debug
+home_dir=/home/wenxi/mydisk/exp/SLAM-Omni
 output_dir=$home_dir/$exp_name
 # ckpt_path=/valleblob/v-wenxichen/exp/asr/asr-Qwen2-0.5b-gpu4-btz6-lr1e-4-fp16-epochs10-whisper_small-latency5-group3/s2s_epoch_5_step_3596  # this line is for resuming training
 
@@ -158,7 +158,7 @@ else
     torchrun \
         --nnodes $num_nodes \
         --nproc_per_node $num_gpus_per_node \
-        --master_port=29503 \
+        --master_port=1234 \
         $code_dir/finetune_s2s.py \
         --config-path "conf" \
         --config-name "prompt.yaml" \
