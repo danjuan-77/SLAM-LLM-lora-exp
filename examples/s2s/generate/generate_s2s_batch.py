@@ -122,7 +122,10 @@ def main(kwargs: DictConfig):
 	code_layer = model_config.vocab_config.code_layer
 	code_type = model_config.code_type
 	num_latency_tokens = dataset_config.num_latency_tokens
-
+	modeling_paradigm = dataset_config.modeling_paradigm
+	interleaved_text_token_num = dataset_config.interleaved_text_token_num
+	interleaved_audio_token_num = dataset_config.interleaved_audio_token_num
+	
 	decode_log_dir = kwargs.get('decode_log')
 	output_text_only = kwargs.get('output_text_only', False)
 	speech_sample_rate = kwargs.get('speech_sample_rate', 24000)
@@ -157,6 +160,12 @@ def main(kwargs: DictConfig):
 	logger.info("Decode Code Type: {}".format(code_type))
 	logger.info("Decode Code Layer: {}".format(code_layer))
 	logger.info("Tone for Audio Generation: {}".format(tone_dir))
+	logger.info("Modeling Paradigm: {}".format(modeling_paradigm))
+
+	if modeling_paradigm == "interleaved":
+		logger.info("Interleaved Text Token Num: {}".format(interleaved_text_token_num))
+		logger.info("Interleaved Audio Token Num: {}".format(interleaved_audio_token_num))
+
 
 	logger.info("============== Start {task_type} Inference ==============".format(task_type=task_type))
 
@@ -166,8 +175,16 @@ def main(kwargs: DictConfig):
 				batch[key] = batch[key].to(device) if isinstance(batch[key], torch.Tensor) else batch[key]
 			start_time = time.time()
 			model_outputs = model.generate(**batch, **decode_config)
-			text_outputs = model_outputs[code_layer]
-			audio_outputs = model_outputs[:code_layer]
+
+			if modeling_paradigm == "parallel":
+				text_outputs = model_outputs[code_layer]
+				audio_outputs = model_outputs[:code_layer]
+			elif modeling_paradigm == "interleaved":
+				text_outputs = model_outputs["text"]
+				audio_outputs = model_outputs["audio"]
+			else:
+				raise NotImplementedError
+			
 			end_time_llm = time.time()
 			logger.info(f"LLM Inference Time: {end_time_llm - start_time:.2f}s")
 			# output_text = model.tokenizer.batch_decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
@@ -192,7 +209,7 @@ def main(kwargs: DictConfig):
 				continue
 
 			for i, key in enumerate(batch["keys"]):
-				audio_tokens = [audio_outputs[layer] for layer in range(code_layer)]
+				audio_tokens = [audio_outputs[layer] for layer in range(code_layer)] if code_layer > 0 else audio_outputs
 
 				if code_type == "SNAC":
 					audiolist = reconscruct_snac(audio_tokens)

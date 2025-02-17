@@ -90,8 +90,6 @@ def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_con
 	code_type = model_config.code_type
 	num_latency_tokens = dataset_config.num_latency_tokens
 	modeling_paradigm = dataset_config.modeling_paradigm
-	interleaved_text_token_num = dataset_config.interleaved_text_token_num
-	interleaved_audio_token_num = dataset_config.interleaved_audio_token_num
 
 	audio_mel, audio_length = extract_audio_feature(wav_path, mel_size)
 

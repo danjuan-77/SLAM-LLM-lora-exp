@@ -358,7 +358,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
 
         if self.inference_mode:
             example_mask = example_ids[0][0].ge(-1)  # [True,True]
-            example_ids = torch.stack(example_ids).squeeze()
+            example_ids = torch.stack(example_ids).squeeze() if self.modeling_paradigm == "parallel" else torch.stack(example_ids).squeeze(0)
 
             return {
                 "input_ids": example_ids,
