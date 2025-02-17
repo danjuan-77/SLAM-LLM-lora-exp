@@ -21,7 +21,7 @@ llm_dim=896                         # 896 1536 2048 3584  -> 0.5B 1.5B 3B 7B
 task_type=s2s
 
 # vocabulary settings
-code_layer=1                        # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 
+code_layer=0                        # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 
 total_audio_vocabsize=4160          # the vocab size of the codec token
 llm_vocabsize=152000                # the vocab size of the LLM model (Qwen2 here)
 total_vocabsize=$((total_audio_vocabsize + llm_vocabsize))
@@ -32,9 +32,12 @@ codec_decoder_type=CosyVoice
 num_latency_tokens=0                # number of latency tokens (same as the number in training)
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
-ckpt_path=/home/wenxi/mydisk/exp/SLAM-Omni/gpu2-btz3-lr1e-4-parallel/s2s_epoch_2_step_22594
+ckpt_path=/home/wenxi/mydisk/exp/SLAM-Omni/gpu2-btz3-lr1e-4-interleave_text12_audio36/s2s_epoch_1_step_60000
 
 # decode config
+modeling_paradigm=interleaved
+interleaved_text_token_num=12
+interleaved_audio_token_num=36
 text_repetition_penalty=1.2
 audio_repetition_penalty=1.2        # default 1.0, set to 1.2 for reduce silence
 max_new_tokens=3000                 # 500 for SNAC, 3000 for CosyVoice-single
@@ -47,7 +50,7 @@ decode_text_only=false
 output_text_only=false
 speech_sample_rate=22050            # 22050 for CosyVoice, 24000 for SNAC
 inference_online=true
-online_output_dir=/home/wenxi/mydisk/exp/conversation/gpu2-btz3-lr1e-4-parallel
+online_output_dir=/home/wenxi/mydisk/exp/conversation/gpu2-btz3-lr1e-4-interleave_text12_audio36
 # audio_prompt_path=./examples/s2s/audio_prompt/zh/prompt_6.wav      # replace this with your own audio prompt path or our provided audio prompt path
 audio_prompt_path=./examples/s2s/audio_prompt/en/prompt_6.wav      # replace this with your own audio prompt path or our provided audio prompt path
 
@@ -61,7 +64,7 @@ if [ "$decode_text_only" = true ] ; then
 fi
 
 # -m debugpy --listen 5678 --wait-for-client
-python $code_dir/inference_s2s.py \
+python -m debugpy --listen 5678 --wait-for-client $code_dir/inference_s2s.py \
         --config-path "conf" \
         --config-name "prompt.yaml" \
         hydra.run.dir=$ckpt_path \
@@ -89,6 +92,9 @@ python $code_dir/inference_s2s.py \
         ++dataset_config.code_type=$code_type \
         ++dataset_config.num_latency_tokens=$num_latency_tokens \
         ++dataset_config.do_layershift=$do_layershift \
+        ++dataset_config.modeling_paradigm=$modeling_paradigm \
+        ++dataset_config.interleaved_text_token_num=$interleaved_text_token_num \
+        ++dataset_config.interleaved_audio_token_num=$interleaved_audio_token_num \
         ++train_config.model_name=s2s \
         ++train_config.freeze_encoder=true \
         ++train_config.freeze_llm=true \
@@ -97,6 +103,9 @@ python $code_dir/inference_s2s.py \
         ++train_config.val_batch_size=1 \
         ++train_config.num_workers_dataloader=2 \
         ++train_config.task_type=$task_type \
+        ++train_config.modeling_paradigm=$modeling_paradigm \
+        ++train_config.interleaved_text_token_num=$interleaved_text_token_num \
+        ++train_config.interleaved_audio_token_num=$interleaved_audio_token_num \
         ++decode_config.text_repetition_penalty=$text_repetition_penalty \
         ++decode_config.audio_repetition_penalty=$audio_repetition_penalty \
         ++decode_config.max_new_tokens=$max_new_tokens \
@@ -116,4 +125,4 @@ python $code_dir/inference_s2s.py \
         ++speech_sample_rate=$speech_sample_rate \
         ++audio_prompt_path=$audio_prompt_path
 
-# bash ./examples/s2s/scripts/inference/inference_s2s_online_single.sh
+# bash ./examples/s2s/scripts/inference/inference_s2s_online_interleave.sh

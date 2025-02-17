@@ -2,7 +2,7 @@
 export OMP_NUM_THREADS=1
 # export CUDA_VISIBLE_DEVICES=2
 # export CUDA_VISIBLE_DEVICES=0,1
-export CUDA_VISIBLE_DEVICES=2,3
+export CUDA_VISIBLE_DEVICES=1,2,3
 # export CUDA_VISIBLE_DEVICES=0,1,2,3
 # export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export TOKENIZERS_PARALLELISM=false
@@ -43,7 +43,7 @@ load_from_cache_file=true           # set to true if you have already generated 
 modeling_paradigm=interleaved
 interleaved_text_token_num=12
 interleaved_audio_token_num=36
-batch_size_training=3
+batch_size_training=2
 use_fp16=true
 use_peft=false
 num_epochs=10
@@ -53,7 +53,7 @@ warmup_steps=1000
 total_steps=100000
 
 # validation settings
-validation_interval=3000
+validation_interval=4000
 split_size=0.01
 
 # exp_name="${llm_name}-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-nofp16-epochs${num_epochs}-whisper_${whisper_size}-group${code_layer}"

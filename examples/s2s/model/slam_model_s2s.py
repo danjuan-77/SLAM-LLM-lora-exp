@@ -402,6 +402,25 @@ class slam_model_s2s(slam_model):
         text_end = False     # Track whether text generation has ended
         audio_end = False    # Track whether audio generation has ended
 
+        if self.train_config.modeling_paradigm == "interleaved":
+            model_outputs = self.llm.generate(
+                inputs_embeds=inputs_embeds,
+                max_new_tokens=max_new_tokens,
+                num_beams=kwargs.get("num_beams", 4),
+                do_sample=kwargs.get("do_sample", False),
+                min_length=kwargs.get("min_length", 1),
+                top_p=kwargs.get("top_p", 1.0),
+                repetition_penalty=text_repetition_penalty,
+                length_penalty=kwargs.get("length_penalty", 1.0),
+                temperature=kwargs.get("temperature", 1.0),
+                attention_mask=attention_mask,
+                bos_token_id=self.tokenizer.bos_token_id,
+                eos_token_id=layershift(eoa, 0),
+                pad_token_id=self.tokenizer.pad_token_id
+            )
+            model_outputs = self.process_interleaved_output(model_outputs)
+            return model_outputs
+
         # NOTE: currently, we only support greedy decoding and sampling for parallel generation, no beam search
         for step in tqdm(range(max_new_tokens), desc="Generating"):
             if current_input_text is not None:
@@ -763,3 +782,40 @@ class slam_model_s2s(slam_model):
         new_labels = torch.cat(new_labels_batch, dim=0) if new_labels else torch.empty(0, interleaved_text_num)
         
         return new_preds, new_labels
+
+    def process_interleaved_output(self, model_outputs):
+        """
+        Parse the interleaved generation results and separate tokens into audio and text.
+        """
+        batch_size, seq_len = model_outputs.shape
+        interleaved_audio_token_num = self.train_config.interleaved_audio_token_num
+        interleaved_text_token_num = self.train_config.interleaved_text_token_num
+        audio_shift = self.model_config.vocab_config.padded_text_vocabsize
+
+        audio_tokens, text_tokens = [], []
+
+        for i in range(batch_size):
+            current_audio, current_text = [], []
+            sequence = model_outputs[i]
+
+            idx = 0
+            while idx < seq_len:
+                text_chunk = sequence[idx: idx + interleaved_text_token_num]
+                current_text.append(text_chunk)
+                idx += interleaved_text_token_num
+
+                if idx < seq_len:
+                    audio_chunk = sequence[idx: idx + interleaved_audio_token_num] - audio_shift
+                    current_audio.append(audio_chunk)
+                    idx += interleaved_audio_token_num
+
+            audio_tokens.append(torch.cat(current_audio) if current_audio else torch.tensor([], device=model_outputs.device))
+            text_tokens.append(torch.cat(current_text) if current_text else torch.tensor([], device=model_outputs.device))
+
+        audio_tokens = torch.stack(audio_tokens) if audio_tokens else torch.empty((batch_size, 0), device=model_outputs.device)
+        text_tokens = torch.stack(text_tokens) if text_tokens else torch.empty((batch_size, 0), device=model_outputs.device)
+
+        return {
+            "audio": audio_tokens,
+            "text": text_tokens.squeeze(0),
+        }
