@@ -95,7 +95,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         if self.manifest_format == "parquet":
             from datasets import load_dataset, load_from_disk
             if dataset_config.load_from_cache_file:       
-                ds = load_dataset(dataset_config.train_data_path)
+                ds = load_dataset(dataset_config.train_data_path, cache_dir="/home/wenxi/mydisk/data/VA-cache")
             else:
                 ds = load_from_disk(dataset_config.train_data_path)   # load_from local disk
             train_val_split = ds['train'].train_test_split(test_size=self.split_size, seed=self.seed)
