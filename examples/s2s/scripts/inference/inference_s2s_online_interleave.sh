@@ -11,7 +11,8 @@ code_dir=examples/s2s
 
 whisper_size=small                  # tiny base small medium large-v3
 speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # replace this with your own whisper model path (different whisper size)
-llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"
+llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B-Instruct/snapshots/c540970f9e29518b1d8f06ab8b24cba66ad77b6d"
+# llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"
 codec_decoder_path="/valleblob/v-wenxichen/models/CosyVoice/CosyVoice-300M-SFT" # replace this with your own CosyVoice model path
 
 encoder_dim=768                     # 384 512 768 896 1024 1280 
@@ -32,7 +33,7 @@ codec_decoder_type=CosyVoice
 num_latency_tokens=0                # number of latency tokens (same as the number in training)
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
-ckpt_path=/home/wenxi/mydisk/exp/SLAM-Omni/gpu2-btz3-lr1e-4-interleave_text12_audio36/s2s_epoch_1_step_60000
+ckpt_path=/valleblob/v-wenxichen/exp/s2s-interleave/gpu3-btz2-lr1e-4-interleave_text12_audio36-Qwen2-0.5b-Instruct-minimal_data/s2s_epoch_3_step_4644
 
 # decode config
 modeling_paradigm=interleaved
@@ -50,7 +51,7 @@ decode_text_only=false
 output_text_only=false
 speech_sample_rate=22050            # 22050 for CosyVoice, 24000 for SNAC
 inference_online=true
-online_output_dir=/home/wenxi/mydisk/exp/conversation/gpu2-btz3-lr1e-4-interleave_text12_audio36
+online_output_dir=/home/wenxi/mydisk/exp/conversation/gpu3-btz2-lr1e-4-interleave_text12_audio36-Qwen2-0.5b-Instruct-minimal_data
 # audio_prompt_path=./examples/s2s/audio_prompt/zh/prompt_6.wav      # replace this with your own audio prompt path or our provided audio prompt path
 audio_prompt_path=./examples/s2s/audio_prompt/en/prompt_6.wav      # replace this with your own audio prompt path or our provided audio prompt path
 
@@ -64,7 +65,7 @@ if [ "$decode_text_only" = true ] ; then
 fi
 
 # -m debugpy --listen 5678 --wait-for-client
-python -m debugpy --listen 5678 --wait-for-client $code_dir/inference_s2s.py \
+python $code_dir/inference_s2s.py \
         --config-path "conf" \
         --config-name "prompt.yaml" \
         hydra.run.dir=$ckpt_path \

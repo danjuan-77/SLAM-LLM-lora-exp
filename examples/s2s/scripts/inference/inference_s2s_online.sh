@@ -2,7 +2,7 @@
 export CUDA_VISIBLE_DEVICES=0
 export TOKENIZERS_PARALLELISM=false
 export OMP_NUM_THREADS=1
-export LD_LIBRARY_PATH=/home/v-wenxichen/anaconda3/envs/slam/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/home/wenxi/miniconda3/envs/slam/lib:$LD_LIBRARY_PATH
 export PYDEVD_WARN_SLOW_RESOLVE_TIMEOUT=2
 export CUDA_LAUNCH_BLOCKING=1
 
@@ -11,8 +11,8 @@ code_dir=examples/s2s
 
 whisper_size=small                  # tiny base small medium large-v3
 speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # replace this with your own whisper model path (different whisper size)
-llm_path="Qwen/Qwen2-0.5B"          # Qwen2-0.5B Qwen2-1.5B Qwen2.5-3B Qwen2.5-7B
-# codec_decoder_path="hubertsiuzdak/snac_24khz" # replace this with your own SNAC model path
+# llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B-Instruct/snapshots/c540970f9e29518b1d8f06ab8b24cba66ad77b6d"
+llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"
 codec_decoder_path="/valleblob/v-wenxichen/models/CosyVoice/CosyVoice-300M-SFT" # replace this with your own CosyVoice model path
 
 encoder_dim=768                      # 384 512 768 896 1024 1280 
@@ -35,9 +35,7 @@ num_latency_tokens=0                # number of latency tokens (same as the numb
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
 # load the backbone model
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/paper-ablation/s2s_train_v4-Qwen2-0.5b-gpu4-btz3-lr1e-4-fp16-epochs10-whisper_small-latency0-group3-Final-Ablation-VoiceAssistant-400K-v2-Total_update_100K/Qwen2-0.5b-gpu4-btz3-lr1e-4-fp16-epochs10-whisper_small-latency0-group3-Final-Ablation-VoiceAssistant-400K-v2-Total_update_100K-s2s_epoch_3_step_19594
-
-# ckpt_path=/valleblob/v-wenxichen/exp/s2s/zh-single/s2s_train_v4-Qwen2-0.5b-gpu32-btz2-lr5e-4-nofp16-epochs10-whisper_small-latency5-group3-belle_3.5M-512-v1-from_scratch/Qwen2-0.5b-gpu32-btz2-lr5e-4-nofp16-epochs10-whisper_small-latency5-group3-belle_3.5M-512-v1-from_scratch-s2s_epoch_3_step_7676
+ckpt_path=/valleblob/v-wenxichen/exp/s2s-interleave/gpu4-btz6-lr1e-5-SLAM-Omni_fine-tuning-distill_emotion_only/s2s_epoch_5_step_196
 
 # use peft module
 use_peft=false
@@ -60,9 +58,10 @@ input_text=false
 output_text_only=false
 speech_sample_rate=22050            # 22050 for CosyVoice, 24000 for SNAC
 inference_online=true
-online_output_dir=/home/v-wenxichen/exp/demo/single-round_en/0
+online_output_dir=/home/wenxi/mydisk/exp/conversation/gpu4-btz6-lr1e-5-SLAM-Omni_fine-tuning-distill_emotion_only
 # audio_prompt_path=./examples/s2s/audio_prompt/zh/prompt_1.wav      # replace this with your own audio prompt path or our provided audio prompt path
-audio_prompt_path=/home/v-wenxichen/data/prompt/girl.wav      # replace this with your own audio prompt path or our provided audio prompt path
+# audio_prompt_path=./examples/s2s/audio_prompt/en/prompt_6.wav      # replace this with your own audio prompt path or our provided audio prompt path
+audio_prompt_path=none
 
 decode_log=$ckpt_path/s2s_decode_${split}_trp${text_repetition_penalty}_arp${audio_repetition_penalty}_seed${dataset_sample_seed}_greedy
 if [ "$do_sample" = true ] ; then
@@ -135,6 +134,5 @@ python $code_dir/inference_s2s.py \
         ++inference_online=$inference_online \
         ++speech_sample_rate=$speech_sample_rate \
         ++audio_prompt_path=$audio_prompt_path \
-        ++peft_ckpt_path=$peft_ckpt_path/model.pt
 
 # bash ./examples/s2s/scripts/inference/inference_s2s_online.sh
