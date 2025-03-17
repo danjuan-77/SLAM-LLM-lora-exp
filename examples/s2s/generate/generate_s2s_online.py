@@ -47,6 +47,14 @@ def extract_audio_feature(audio_path, mel_size):
 
 def get_input_ids(length, special_token_a, special_token_t, vocab_config, layer_shift=layershift):
 	input_ids = []
+	if vocab_config.code_layer == 0:
+		input_ids_item = []
+		input_ids_item.append(layershift(vocab_config.input_a, 0))
+		input_ids_item += [layershift(vocab_config.pad_a, 0)] * length
+		input_ids_item += [(layershift(vocab_config.eoa, 0)), layershift(special_token_a, 0)]
+		input_ids = torch.tensor(input_ids_item).unsqueeze(0).unsqueeze(0)
+		return input_ids
+
 	for i in range(vocab_config.code_layer):
 		input_ids_item = []
 		input_ids_item.append(layer_shift(vocab_config.input_a, i))
@@ -81,6 +89,7 @@ def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_con
 	task_type = dataset_config.task_type
 	code_type = model_config.code_type
 	num_latency_tokens = dataset_config.num_latency_tokens
+	modeling_paradigm = dataset_config.modeling_paradigm
 
 	audio_mel, audio_length = extract_audio_feature(wav_path, mel_size)
 
@@ -123,8 +132,16 @@ def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_con
 		return model.stream_generate(**batch, **decode_config)
 
 	model_outputs = model.generate(**batch, **decode_config)
-	text_outputs = model_outputs[code_layer]
-	audio_outputs = model_outputs[:code_layer]	
+
+	if modeling_paradigm == "parallel":
+		text_outputs = model_outputs[code_layer]
+		audio_outputs = model_outputs[:code_layer]
+	elif modeling_paradigm == "interleaved":
+		text_outputs = model_outputs['text']
+		audio_outputs = model_outputs['audio']
+	else:
+		raise NotImplementedError
+
 	output_text = model.tokenizer.decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
 	
 	if decode_config.decode_text_only or output_text_only:
@@ -134,7 +151,7 @@ def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_con
 		logger.warning(f"Audio token is too long, skip. You can try to increase the max_new_tokens in the decode_config.")
 		return None, output_text
 	
-	audio_tokens = [audio_outputs[layer] for layer in range(code_layer)]
+	audio_tokens = [audio_outputs[layer] for layer in range(code_layer)] if code_layer > 0 else audio_outputs
 
 	if code_type == "SNAC":
 		audiolist = reconscruct_snac(audio_tokens)
@@ -289,6 +306,9 @@ def main(kwargs: DictConfig):
 	code_layer = model_config.vocab_config.code_layer
 	code_type = model_config.code_type
 	do_layershift = dataset_config.do_layershift
+	modeling_paradigm = dataset_config.modeling_paradigm
+	interleaved_text_token_num = dataset_config.interleaved_text_token_num
+	interleaved_audio_token_num = dataset_config.interleaved_audio_token_num
 
 	output_text_only = kwargs.get('output_text_only', False)
 	speech_sample_rate = kwargs.get('speech_sample_rate', 24000)
@@ -333,6 +353,11 @@ def main(kwargs: DictConfig):
 	logger.info("Decode Code Type: {}".format(code_type))
 	logger.info("Decode Code Layer: {}".format(code_layer))
 	logger.info("Tone for Audio Generation: {}".format(tone_dir))
+	logger.info("Modeling Paradigm: {}".format(modeling_paradigm))
+
+	if modeling_paradigm == "interleaved":
+		logger.info("Interleaved Text Token Num: {}".format(interleaved_text_token_num))
+		logger.info("Interleaved Audio Token Num: {}".format(interleaved_audio_token_num))
 
 	if not inference_streaming:
 		if decode_config.input_text:

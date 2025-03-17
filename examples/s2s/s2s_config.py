@@ -162,6 +162,11 @@ class TrainConfig:
     task_type:str = "s2s"
     freeze_encoder_projector:bool = False
     freeze_group_decode_adapter:bool = False
+    modeling_paradigm:str = field(default="parallel", metadata={
+        "help": "alternative: interleaved"
+    })
+    interleaved_text_token_num: int = 12
+    interleaved_audio_token_num: int = 36
 
 
 
@@ -201,6 +206,11 @@ class DataConfig:
     code_type: str = "SNAC" 
     num_latency_tokens: int = 0
     do_layershift: bool = True
+    modeling_paradigm: str = field(default="parallel", metadata={
+        "help": "alternative: interleaved"
+    })
+    interleaved_text_token_num: int = 12
+    interleaved_audio_token_num: int = 36
 
 @dataclass
 class DecodeConfig:

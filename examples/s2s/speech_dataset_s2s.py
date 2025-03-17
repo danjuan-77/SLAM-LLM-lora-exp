@@ -34,8 +34,12 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         self.manifest_format = dataset_config.get("manifest_format", "parquet")
         self.seed = dataset_config.get("seed", 42)
         self.split_size = dataset_config.get("split_size", 0.1)
+        self.modeling_paradigm = dataset_config.get("modeling_paradigm", "parallel")
+        self.interleaved_text_token_num = dataset_config.get("interleaved_text_token_num", 12)
+        self.interleaved_audio_token_num = dataset_config.get("interleaved_audio_token_num", 36)
         assert self.input_type in ["raw", "mel"], "input_type must be one of [raw, mel]" 
         assert self.manifest_format in ["parquet", "jsonl"], "manifest_format must be one of [parquet, jsonl]"
+        assert self.modeling_paradigm in ["parallel", "interleaved"], "modeling_paradigm must be one of [parallel, interleaved]"
 
         # vocab config
         self.vocab_config = dataset_config.get("vocab_config", None)
@@ -91,7 +95,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         if self.manifest_format == "parquet":
             from datasets import load_dataset, load_from_disk
             if dataset_config.load_from_cache_file:       
-                ds = load_dataset(dataset_config.train_data_path)       # load_from huggingface datasets
+                ds = load_dataset(dataset_config.train_data_path)
             else:
                 ds = load_from_disk(dataset_config.train_data_path)   # load_from local disk
             train_val_split = ds['train'].train_test_split(test_size=self.split_size, seed=self.seed)
@@ -135,7 +139,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
                 audio_res, audio_length = get_snac_answer_token(audio_path)
             elif self.code_type == "CosyVoice":
                 audio_tokens = audio_path
-                if self.code_layer == 1:
+                if self.code_layer <= 1:
                     audio_res, audio_length = get_single_layer_answer_token(audio_tokens, self.num_latency_tokens, self._pad_a, self._eoa)
                 else:
                     audio_res, audio_length = get_group_answer_token(audio_tokens, self.num_latency_tokens, self._pad_a, self._eoa, self.code_layer)
@@ -161,6 +165,14 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
 
     def get_input_ids(self, length, special_token_a, special_token_t):
         input_ids = []
+        if self.code_layer == 0:
+            input_ids_item = []
+            input_ids_item.append(self.layershift(self._input_a, 0))
+            input_ids_item += [self.layershift(self._pad_a, 0)] * length
+            input_ids_item += [(self.layershift(self._eoa, 0)), self.layershift(special_token_a, 0)]
+            input_ids = torch.tensor(input_ids_item).unsqueeze(0).unsqueeze(0)
+            return input_ids
+
         for i in range(self.code_layer):
             input_ids_item = []
             input_ids_item.append(self.layershift(self._input_a, i))
@@ -190,6 +202,50 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         answer_id_T = torch.tensor([self._pad_t] * length)
         answer_ids.append(answer_id_T.unsqueeze(0))
         return answer_ids
+
+    def pad_interleaved_chunks(self, answer_text_ids, target_audio):
+        audio_chunk_num = (len(target_audio) + self.interleaved_audio_token_num - 1) // self.interleaved_audio_token_num
+        text_chunk_num = (len(answer_text_ids) + self.interleaved_text_token_num - 1) // self.interleaved_text_token_num
+
+        padding_needed_text = self.interleaved_text_token_num * text_chunk_num - len(answer_text_ids)
+        if padding_needed_text > 0:
+            pad_tensor_text = torch.full((padding_needed_text,), self._pad_t, dtype=answer_text_ids.dtype)
+            answer_text_ids = torch.cat([answer_text_ids, pad_tensor_text])
+
+        padding_needed_audio = self.interleaved_audio_token_num * audio_chunk_num - len(target_audio)
+        if padding_needed_audio > 0:
+            pad_tensor_audio = torch.full((padding_needed_audio,), self._pad_a, dtype=target_audio.dtype)
+            target_audio = torch.cat([target_audio, pad_tensor_audio])
+
+        if audio_chunk_num >= text_chunk_num:
+            chunk_diff = audio_chunk_num - text_chunk_num
+            pad_tensor_text = torch.full((self.interleaved_text_token_num * chunk_diff,), self._pad_t, dtype=answer_text_ids.dtype)
+            answer_text_ids = torch.cat([answer_text_ids, pad_tensor_text])
+        else:
+            chunk_diff = text_chunk_num - audio_chunk_num
+            pad_tensor_audio = torch.full((self.interleaved_audio_token_num * chunk_diff,), self._pad_a, dtype=target_audio.dtype)
+            target_audio = torch.cat([target_audio, pad_tensor_audio])
+
+        return answer_text_ids, target_audio
+
+    def interleave_chunks(self, answer_text_ids, target_audio):
+        interleaved_tokens = []
+        text_chunk_size = self.interleaved_text_token_num
+        audio_chunk_size = self.interleaved_audio_token_num
+
+        num_chunks = max(
+            len(answer_text_ids) // text_chunk_size, 
+            len(target_audio) // audio_chunk_size
+        )
+
+        for i in range(num_chunks):
+            text_chunk = answer_text_ids[i * text_chunk_size:(i + 1) * text_chunk_size]
+            audio_chunk = target_audio[i * audio_chunk_size:(i + 1) * audio_chunk_size]
+
+            interleaved_tokens.extend(text_chunk)
+            interleaved_tokens.extend(audio_chunk)
+
+        return interleaved_tokens
 
     def upsample_tokens(self, tokens, upsampling_factor, method="repeat"):
         """
@@ -302,7 +358,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
 
         if self.inference_mode:
             example_mask = example_ids[0][0].ge(-1)  # [True,True]
-            example_ids = torch.stack(example_ids).squeeze()
+            example_ids = torch.stack(example_ids).squeeze() if self.modeling_paradigm == "parallel" else torch.stack(example_ids).squeeze(0)
 
             return {
                 "input_ids": example_ids,
@@ -330,32 +386,47 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         answer_text_ids.append(self._eot) # [answer,eos]
         answer_text_ids = torch.tensor(answer_text_ids, dtype=torch.int64)
 
-        answer_length = max(len(answer_text_ids), target_audio_length)
-        answer_ids = self.get_answer_ids(answer_length)                 # NOTE: somtimes answer_text_ids is longer than target_audio_length 
-        answer_ids[self.code_layer] = torch.cat((answer_text_ids.unsqueeze(0), answer_ids[self.code_layer][:,len(answer_text_ids):]),dim=1)     # [answer_text,eos]
-        text_padding_length = target_audio_length - len(answer_text_ids)
+        if self.modeling_paradigm == "parallel":
+            answer_length = max(len(answer_text_ids), target_audio_length)
+            answer_ids = self.get_answer_ids(answer_length)                 # NOTE: somtimes answer_text_ids is longer than target_audio_length 
+            answer_ids[self.code_layer] = torch.cat((answer_text_ids.unsqueeze(0), answer_ids[self.code_layer][:,len(answer_text_ids):]),dim=1)     # [answer_text,eos]
+            text_padding_length = target_audio_length - len(answer_text_ids)
 
-        labels_ids = copy.deepcopy(answer_ids)
-        ori_example_ids = copy.deepcopy(example_ids)
-        
-        if target_audio is not None:    
-            for i in range(self.code_layer):
-                labels_ids[i] = torch.cat((target_audio[i].unsqueeze(0), answer_ids[i][:,target_audio_length:]), dim=1)
-                answer_ids[i] = torch.cat((self.layershift(target_audio[i], i).unsqueeze(0), labels_ids[i][:,target_audio_length:]), dim=1)
+            labels_ids = copy.deepcopy(answer_ids)
+            ori_example_ids = copy.deepcopy(example_ids)
+            
+            if target_audio is not None:    
+                for i in range(self.code_layer):
+                    labels_ids[i] = torch.cat((target_audio[i].unsqueeze(0), answer_ids[i][:,target_audio_length:]), dim=1)
+                    answer_ids[i] = torch.cat((self.layershift(target_audio[i], i).unsqueeze(0), labels_ids[i][:,target_audio_length:]), dim=1)
 
-        for i in range(self.code_layer + 1):
-            example_ids[i] = torch.cat((ori_example_ids[i], answer_ids[i]), dim=1)  # [prompt,audio,answer,eos]
-            labels_ids[i] = torch.cat((ori_example_ids[i], labels_ids[i]), dim=1)
+            for i in range(self.code_layer + 1):
+                example_ids[i] = torch.cat((ori_example_ids[i], answer_ids[i]), dim=1)  # [prompt,audio,answer,eos]
+                labels_ids[i] = torch.cat((ori_example_ids[i], labels_ids[i]), dim=1)
 
-        example_ids = torch.stack(example_ids).squeeze()
-        labels_ids = torch.stack(labels_ids).squeeze()
-        labels_ids[:,:input_length + prompt_length + 3] = -1  # [-1,-1,answer,eos]; NOTE: here 3 include <bos> <eos> <ans_t>
+            example_ids = torch.stack(example_ids).squeeze()
+            labels_ids = torch.stack(labels_ids).squeeze()
+            labels_ids[:,:input_length + prompt_length + 3] = -1  # [-1,-1,answer,eos]; NOTE: here 3 include <bos> <eos> <ans_t>
 
-        if text_padding_length > 0:
-            labels_ids[self.code_layer,-text_padding_length:] = -1   # [-1,-1,answer_text,eos,-1]
-        else:
-            audio_padding_length = -text_padding_length
-            labels_ids[:self.code_layer,-audio_padding_length:] = -1  # [-1,-1,answer_text,eos,-1]
+            if text_padding_length > 0:
+                labels_ids[self.code_layer,-text_padding_length:] = -1   # [-1,-1,answer_text,eos,-1]
+            else:
+                audio_padding_length = -text_padding_length
+                labels_ids[:self.code_layer,-audio_padding_length:] = -1  # [-1,-1,answer_text,eos,-1]
+
+        elif self.modeling_paradigm == "interleaved":
+            target_audio = target_audio.squeeze(0)
+            example_ids = example_ids[0]
+            answer_text_ids, target_audio = self.pad_interleaved_chunks(answer_text_ids, target_audio)
+            target_audio_labels = self.layershift(target_audio, 0)
+            interleaved_sequence = self.interleave_chunks(answer_text_ids, target_audio_labels)
+
+            example_ids = torch.cat((example_ids, torch.tensor(interleaved_sequence).unsqueeze(0)), dim=1)
+            labels_ids = example_ids.clone()
+            labels_ids[:,:input_length + prompt_length + 3] = -1  # [-1,-1,answer,eos]; NOTE: here 3 include <bos> <eos> <ans_t>
+
+            # NOTE: here padding token loss is calculated 
+
         
         example_mask = example_ids[0].ge(-1)  # [True,True,True,True]
 

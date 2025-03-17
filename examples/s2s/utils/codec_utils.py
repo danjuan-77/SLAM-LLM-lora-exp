@@ -72,8 +72,10 @@ def audio_decode_cosyvoice(audio_tokens, model_config, codec_decoder, tone_dir, 
         audio_tokens_permuted = audio_tokens_tensor.permute(1, 0)
         audio_tokens = audio_tokens_permuted.reshape(-1).unsqueeze(0)
         audio_tokens = audio_tokens[..., num_latency_tokens * code_layer:]
-    else:
+    elif code_layer == 1:
         audio_tokens = torch.cat(audio_tokens, dim=-1).unsqueeze(0)
+        audio_tokens = audio_tokens[..., num_latency_tokens:]
+    else:
         audio_tokens = audio_tokens[..., num_latency_tokens:]
 
     # Get vocabulary configuration for end of audio (EOA) and padding token

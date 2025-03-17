@@ -11,7 +11,7 @@ code_dir=examples/s2s
 
 whisper_size=small                  # tiny base small medium large-v3
 speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # replace this with your own whisper model path (different whisper size)
-llm_path="Qwen/Qwen2-0.5B"
+llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"
 codec_decoder_path="/valleblob/v-wenxichen/models/CosyVoice/CosyVoice-300M-SFT" # replace this with your own CosyVoice model path
 
 encoder_dim=768                     # 384 512 768 896 1024 1280 
@@ -32,7 +32,7 @@ codec_decoder_type=CosyVoice
 num_latency_tokens=0                # number of latency tokens (same as the number in training)
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/paper-ablation/s2s_train_v4-Qwen2-0.5b-gpu4-btz2-lr1e-4-fp16-epochs10-whisper_small-latency5-group1-Final-Ablation-VoiceAssistant-400K-v2-Total_update_100K/Qwen2-0.5b-gpu4-btz2-lr1e-4-fp16-epochs10-whisper_small-latency5-group1-Final-Ablation-VoiceAssistant-400K-v2-Total_update_100K-s2s_epoch_2_step_41695
+ckpt_path=/home/wenxi/mydisk/exp/SLAM-Omni/gpu2-btz3-lr1e-4-parallel/s2s_epoch_2_step_22594
 
 # decode config
 text_repetition_penalty=1.2
@@ -47,7 +47,7 @@ decode_text_only=false
 output_text_only=false
 speech_sample_rate=22050            # 22050 for CosyVoice, 24000 for SNAC
 inference_online=true
-online_output_dir=/home/v-wenxichen/exp/cosyvoice/cosyvoice-single/base
+online_output_dir=/home/wenxi/mydisk/exp/conversation/gpu2-btz3-lr1e-4-parallel
 # audio_prompt_path=./examples/s2s/audio_prompt/zh/prompt_6.wav      # replace this with your own audio prompt path or our provided audio prompt path
 audio_prompt_path=./examples/s2s/audio_prompt/en/prompt_6.wav      # replace this with your own audio prompt path or our provided audio prompt path
 

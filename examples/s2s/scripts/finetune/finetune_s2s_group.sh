@@ -4,7 +4,7 @@ export OMP_NUM_THREADS=1
 export CUDA_VISIBLE_DEVICES=0,1,2,3
 # export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export TOKENIZERS_PARALLELISM=false
-export LD_LIBRARY_PATH=/home/v-wenxichen/miniconda3/envs/slam/lib:$LD_LIBRARY_PATH
+export LD_LIBRARY_PATH=/home/wenxi/miniconda3/envs/slam/lib:$LD_LIBRARY_PATH
 
 code_dir=examples/s2s
 num_gpus_per_node=$(( $(echo ${CUDA_VISIBLE_DEVICES} | tr -cd ',' | wc -c) + 1 ))
@@ -13,7 +13,8 @@ num_gpus=$(( num_gpus_per_node * num_nodes ))
 
 whisper_size=small                  # tiny base small medium large-v3
 speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # different whisper size
-llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"  # Qwen/Qwen2-0.5B, you can choose other Qwen models (Qwen2 or Qwen2.5)
+# llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B-Instruct/snapshots/c540970f9e29518b1d8f06ab8b24cba66ad77b6d"
+llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"
 llm_name=Qwen2-0.5b
 
 encoder_dim=768                     # 384 512 768 1024 1280
@@ -33,8 +34,8 @@ do_layershift=false                 # if false, tokens in each layers use the sa
 
 # dataset settings
 manifest_format=parquet             # parquet or jsonl
-train_data_path=worstchan/VoiceAssistant-400K-SLAM-Omni
-val_data_path=worstchan/VoiceAssistant-400K-SLAM-Omni
+train_data_path=/home/wenxi/mydisk/data/distll_clean/SLAM-Omni_distill_parquet/emotion_gen
+val_data_path=/home/wenxi/mydisk/data/distll_clean/SLAM-Omni_distill_parquet/emotion_gen
 load_from_cache_file=true           # set to true if you have already generated the cache file, otherwise set to false
 
 # training settings
@@ -42,13 +43,13 @@ batch_size_training=6
 use_fp16=true
 use_peft=false
 num_epochs=10
-lr=1e-4
+lr=1e-5
 task_type=s2s
 warmup_steps=1000
-total_steps=100000
+total_steps=10000
 
 # validation settings
-validation_interval=3000
+validation_interval=500
 split_size=0.01
 
 # model settings
@@ -56,17 +57,20 @@ group_decode=true
 group_decode_adapter_type=linear
 
 # log settings
-exp_name="s2s_train_v4-${llm_name}-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-nofp16-epochs${num_epochs}-whisper_${whisper_size}-latency${num_latency_tokens}-group${code_layer}"
-if [ "$use_fp16" = true ]; then
-    exp_name="s2s_train_v4-${llm_name}-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-fp16-epochs${num_epochs}-whisper_${whisper_size}-latency${num_latency_tokens}-group${code_layer}"
-fi
-# exp_name="debug"
-wandb_entity_name=test
-wandb_project_name=test
+# exp_name="s2s_train_v4-${llm_name}-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-nofp16-epochs${num_epochs}-whisper_${whisper_size}-latency${num_latency_tokens}-group${code_layer}"
+# if [ "$use_fp16" = true ]; then
+#     exp_name="s2s_train_v4-${llm_name}-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-fp16-epochs${num_epochs}-whisper_${whisper_size}-latency${num_latency_tokens}-group${code_layer}"
+# fi
 
-home_dir=/home/v-wenxichen/exp/debug
+exp_name="gpu${num_gpus}-btz${batch_size_training}-lr${lr}-SLAM-Omni_fine-tuning-distill_emotion_only"
+
+exp_name="debug"
+wandb_entity_name=1029713857
+wandb_project_name=SLAM-Omni-Interleaved
+
+home_dir=/valleblob/v-wenxichen/exp/s2s-interleave
 output_dir=$home_dir/$exp_name
-# ckpt_path=/valleblob/v-wenxichen/exp/asr/asr-Qwen2-0.5b-gpu4-btz6-lr1e-4-fp16-epochs10-whisper_small-latency5-group3/s2s_epoch_5_step_3596  # this line is for resuming training
+ckpt_path=/home/wenxi/mydisk/models/Qwen2-0.5b-whisper_small-latency0-group3-single-round-English  # this line is for resuming training
 
 if [ "$exp_name" = "debug" ]; then
     use_wandb=false
@@ -131,6 +135,7 @@ hydra.run.dir=$output_dir \
 ++log_config.wandb_dir=$output_dir \
 ++log_config.log_file=$output_dir/exp.log \
 ++log_config.log_interval=100 \
+++ckpt_path=$ckpt_path/model.pt \
 "
 # ++ckpt_path=$ckpt_path/model.pt \
 # ↑ this line is for resuming training

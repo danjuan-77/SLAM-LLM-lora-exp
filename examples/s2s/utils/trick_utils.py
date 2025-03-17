@@ -16,10 +16,6 @@ def partial_freeze_weights(model, original_vocabsize, total_vocabsize):
         grad[trainable_range[1] + 1:, :] = 0
         return grad
 
-    # Freeze all layers first
-    for param in model.parameters():
-        param.requires_grad = False
-
     # Assuming the output layer is `lm_head`
     for param in model.llm.lm_head.parameters():
         # Compute the standard deviation for He initialization
