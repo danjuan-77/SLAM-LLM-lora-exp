@@ -97,6 +97,7 @@ class ModelConfig:
     group_decode: bool = False
     group_decode_adapter_type: str = "linear"
     whisper_decode: bool = False
+    tokenizer_path: Optional[str] = None
 
 
 @dataclass
