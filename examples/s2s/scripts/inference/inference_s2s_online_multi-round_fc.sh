@@ -13,6 +13,7 @@ whisper_size=small                  # tiny base small medium large-v3
 speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # replace this with your own whisper model path (different whisper size)
 llm_path="Qwen/Qwen2-0.5B"
 codec_decoder_path="/valleblob/v-wenxichen/models/CosyVoice/CosyVoice-300M-SFT" # replace this with your own CosyVoice model path
+tokenizer_path="/valleblob/v-wenxichen/models/tokenizer/qwen2_tokenizer_fc"
 
 encoder_dim=768                     # 384 512 768 896 1024 1280 
 mel_size=80                         # 80 128 (128 for whisper-large only, 80 for others)
@@ -33,7 +34,7 @@ num_latency_tokens=0                # number of latency tokens (same as the numb
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
 # load the backbone model
-ckpt_path=/home/wenxi/mydisk/models/Qwen2-0.5b-whisper_small-latency0-group3-multi-round-Chinese
+ckpt_path=/valleblob/v-wenxichen/exp/s2s-interleave/gpu4-btz4-lr1e-5-SLAM-Omni_fine-tuning-chinese_multi_round-function_call-tokenizer_change/s2s_epoch_4_step_648
 
 # model settings
 group_decode=true
@@ -55,7 +56,7 @@ output_text_only=false
 speech_sample_rate=22050            # 22050 for CosyVoice, 24000 for SNAC
 inference_online=true
 multi_round=true
-online_output_dir=/home/wenxi/mydisk/exp/conversation/multi-round-zh
+online_output_dir=/home/wenxi/mydisk/exp/conversation/gpu4-btz4-lr1e-5-SLAM-Omni_fine-tuning-chinese_multi_round-function_call-tokenizer_change
 audio_prompt_path=./examples/s2s/audio_prompt/zh/prompt_6.wav      # replace this with your own audio prompt path or our provided audio prompt path
 # audio_prompt_path=./examples/s2s/audio_prompt/en/prompt_6.wav        # replace this with your own audio prompt path or our provided audio prompt path
 
@@ -91,6 +92,7 @@ python $code_dir/inference_s2s.py \
         ++model_config.group_decode=$group_decode \
         ++model_config.group_decode_adapter_type=$group_decode_adapter_type \
         ++model_config.whisper_decode=$whisper_decode \
+        ++model_config.tokenizer_path=$tokenizer_path \
         ++dataset_config.dataset=speech_dataset_s2s \
         ++dataset_config.input_type=mel \
         ++dataset_config.mel_size=$mel_size \
@@ -134,4 +136,4 @@ python $code_dir/inference_s2s.py \
         ++multi_round=$multi_round \
         # ++peft_ckpt_path=$peft_ckpt_path/model.pt \
 
-# bash ./examples/s2s/scripts/inference/inference_s2s_online_multi-round.sh
+# bash ./examples/s2s/scripts/inference/inference_s2s_online_multi-round_fc.sh

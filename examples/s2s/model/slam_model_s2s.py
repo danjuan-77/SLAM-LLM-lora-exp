@@ -4,7 +4,6 @@ import logging
 import torch.nn.functional as F
 from slam_llm.models.slam_model import (
     slam_model,
-    setup_tokenizer,
     setup_encoder,
     setup_encoder_projector,
     setup_llm,
@@ -12,7 +11,7 @@ from slam_llm.models.slam_model import (
 from slam_llm.utils.train_utils import print_model_size
 from typing import List, Optional, Generator
 from slam_llm.utils.metric import compute_accuracy
-from transformers import T5ForConditionalGeneration
+from transformers import T5ForConditionalGeneration, AutoTokenizer
 from tqdm import tqdm
 from utils.tts_adapter_utils import setup_tts_adapter
 from utils.codec_utils import setup_codec
@@ -31,13 +30,13 @@ def model_factory(train_config, model_config, **kwargs):
     tokenizer = setup_tokenizer(train_config, model_config, **kwargs)
 
     whisper_model = None
-    if train_config.task_type == "s2s" or train_config.task_type == "asr":
+    if train_config.task_type in ["s2s", "asr", "s2t"]:
         if not model_config.whisper_decode:
             encoder = setup_encoder(train_config, model_config, **kwargs)
         else:
             whisper_model = setup_encoder(train_config, model_config, **kwargs)
             encoder = whisper_model.encoder
-    elif train_config.task_type == "tts":
+    elif train_config.task_type in ["tts", "t2s"]:
         encoder = None
     else:
         raise NotImplementedError
@@ -115,6 +114,23 @@ def model_factory(train_config, model_config, **kwargs):
         ),
     )
     return model, tokenizer
+
+
+def setup_tokenizer(train_config, model_config, **kwargs):
+    # Load the tokenizer and add special tokens
+    if "vallex" in model_config.llm_name.lower():
+        return None  
+    elif "mupt" in model_config.llm_name.lower():
+        tokenizer = AutoTokenizer.from_pretrained(model_config.llm_path,
+                                            trust_remote_code=True,
+                                            use_fast=False)
+    elif model_config.tokenizer_path is not None:
+        tokenizer = AutoTokenizer.from_pretrained(model_config.tokenizer_path)
+        tokenizer.pad_token_id = tokenizer.eos_token_id
+    else:
+        tokenizer = AutoTokenizer.from_pretrained(model_config.llm_path)
+        tokenizer.pad_token_id = tokenizer.eos_token_id
+    return tokenizer
 
 
 class slam_model_s2s(slam_model):
@@ -253,6 +269,9 @@ class slam_model_s2s(slam_model):
             
             else:
                 raise NotImplementedError
+
+        elif inputs_embeds.dim() == 4: # [btz, code_layer + 1, seq_length, emb_dim]
+            inputs_embeds = torch.mean(inputs_embeds, dim=1) # [btz, seq_length, emb_dim]
         
         if kwargs.get("inference_mode", False):
             return inputs_embeds, attention_mask
