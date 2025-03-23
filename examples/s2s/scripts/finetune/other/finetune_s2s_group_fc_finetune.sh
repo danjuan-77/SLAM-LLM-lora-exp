@@ -172,4 +172,4 @@ fi
 # --node_rank=$node_rank \
 # --master_addr=$master_addr \
 
-# bash examples/s2s/scripts/finetune/finetune_s2s_group_fc_finetune.sh
+# bash examples/s2s/scripts/finetune/other/finetune_s2s_group_fc_finetune.sh

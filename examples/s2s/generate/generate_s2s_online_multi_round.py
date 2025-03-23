@@ -135,8 +135,7 @@ def generate_from_wav(wav_path, model, dataset_config, decode_config, logger, de
 
 	whisper_model = model.whisper_model
 	options = whisper.DecodingOptions()
-	result = whisper.decode(whisper_model, audio_embedding.squeeze(0), options)
-	transcribed_text = result.text
+	transcribed_text = whisper.decode(whisper_model, audio_embedding.squeeze(0), options).text
 	
 	if decode_config.decode_text_only or output_text_only:
 		return None, output_text, " ASSISTANT: " + output_text, transcribed_text
@@ -177,6 +176,13 @@ def generate_from_text(text_input, model, dataset_config, decode_config, logger,
 
 	prompt = prompt_template.format(prompt, history)
 	# prompt = prompt_template.format(prompt)		# note: old version
+
+	if decode_config.use_rag:
+		from utils.rag_utils import run_retrieval
+		retrieval_result = run_retrieval(text_input, decode_config)
+		logger.info(f"Retrieval Result: {retrieval_result}")
+		prompt = prompt + "\n" + retrieval_result
+
 	prompt_ids = model.tokenizer.encode(prompt)
 	prompt_ids = [_input_t] + prompt_ids + [_eot]
 	prompt_length = len(prompt_ids)

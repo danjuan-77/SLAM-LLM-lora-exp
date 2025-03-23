@@ -1,7 +1,7 @@
 #!/bin/bash
 export OMP_NUM_THREADS=1
-export CUDA_VISIBLE_DEVICES=0
-# export CUDA_VISIBLE_DEVICES=0,1,2,3
+# export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=0,1,2,3
 # export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export TOKENIZERS_PARALLELISM=false
 export LD_LIBRARY_PATH=/home/wenxi/miniconda3/envs/slam/lib:$LD_LIBRARY_PATH
@@ -65,8 +65,8 @@ split_size=0.01
 #     exp_name="${llm_name}-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-fp16-epochs${num_epochs}-whisper_${whisper_size}-group${code_layer}"
 # fi
 
-exp_name="gpu${num_gpus}-btz${batch_size_training}-lr${lr}-interleave_text${interleaved_text_token_num}_audio${interleaved_audio_token_num}-Qwen2.5-3b-gradient_accumulation${gradient_accumulation_steps}-lora-audio_embed_only"
-exp_name="debug"
+exp_name="gpu${num_gpus}-btz${batch_size_training}-lr${lr}-interleave_text${interleaved_text_token_num}_audio${interleaved_audio_token_num}-Qwen2.5-3b-gradient_accumulation${gradient_accumulation_steps}-lora-audio_embed_only-lora_rank${lora_r}-alpha${lora_alpha}"
+# exp_name="debug"
 wandb_entity_name=1029713857
 wandb_project_name=SLAM-Omni-Interleaved
 

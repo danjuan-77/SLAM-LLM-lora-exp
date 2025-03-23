@@ -136,4 +136,4 @@ python $code_dir/inference_s2s.py \
         ++multi_round=$multi_round \
         # ++peft_ckpt_path=$peft_ckpt_path/model.pt \
 
-# bash ./examples/s2s/scripts/inference/inference_s2s_online_multi-round_fc.sh
+# bash ./examples/s2s/scripts/inference/other/inference_s2s_online_multi-round_fc.sh
