@@ -1,5 +1,5 @@
 #!/bin/bash
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=1
 export TOKENIZERS_PARALLELISM=false
 export OMP_NUM_THREADS=1
 export LD_LIBRARY_PATH=/home/v-wenxichen/anaconda3/envs/slam/lib:$LD_LIBRARY_PATH
@@ -63,7 +63,7 @@ output_text_only=false
 speech_sample_rate=22050            # 22050 for CosyVoice, 24000 for SNAC
 inference_online=true
 multi_round=true
-online_output_dir=/home/wenxi/mydisk/exp/conversation/multi-round-zh
+online_output_dir=/home/wenxi/mydisk/exp/conversation/multi-round-zh-rag
 audio_prompt_path=./examples/s2s/audio_prompt/zh/prompt_6.wav      # replace this with your own audio prompt path or our provided audio prompt path
 # audio_prompt_path=./examples/s2s/audio_prompt/en/prompt_6.wav        # replace this with your own audio prompt path or our provided audio prompt path
 

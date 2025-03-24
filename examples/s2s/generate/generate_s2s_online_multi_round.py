@@ -84,11 +84,28 @@ def generate_from_wav(wav_path, model, dataset_config, decode_config, logger, de
 	task_type = dataset_config.task_type
 	code_type = model_config.code_type
 	num_latency_tokens = dataset_config.num_latency_tokens
+	audio_embedding = None
+	transcribed_text = None
 
 	audio_mel, audio_length = extract_audio_feature(wav_path, mel_size)
+	audio_mel = audio_mel.unsqueeze(0).to(device)
+	model.encoder.eval()
+	if model_config.encoder_name == "whisper":
+		audio_embedding = model.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1))
 
 	prompt = prompt_template.format(prompt, history)
 	# prompt = prompt_template.format(prompt)		# note: old version
+
+	if decode_config.use_rag:
+		from utils.rag_utils import run_retrieval
+		logger.info("Running retrieval")
+		whisper_model = model.whisper_model
+		options = whisper.DecodingOptions()
+		transcribed_text = whisper.decode(whisper_model, audio_embedding.squeeze(0), options).text
+		retrieval_result = run_retrieval(transcribed_text, decode_config)
+		logger.info(f"Retrieval Result: {retrieval_result}")
+		prompt = prompt + "\n" + retrieval_result
+
 	prompt_ids = model.tokenizer.encode(prompt)
 	prompt_ids = [_input_t] + prompt_ids + [_eot]
 	prompt_length = len(prompt_ids)
@@ -103,7 +120,6 @@ def generate_from_wav(wav_path, model, dataset_config, decode_config, logger, de
 
 	input_ids = example_ids.unsqueeze(0).to(device)
 	attention_mask = example_mask.unsqueeze(0).to(device)
-	audio_mel = audio_mel.unsqueeze(0).to(device)
 	input_length = torch.tensor([input_length]).to(device)
 	audio_length = torch.tensor([audio_length]).to(device)
 	task_type = [task_type]
@@ -111,11 +127,6 @@ def generate_from_wav(wav_path, model, dataset_config, decode_config, logger, de
 	modality_mask = torch.zeros_like(attention_mask)
 	padding_left = prompt_length + 1 # +1 for <bos>
 	modality_mask[0, padding_left:padding_left+audio_length] = True
-
-	model.encoder.eval()
-	audio_embedding = None
-	if model_config.encoder_name == "whisper":
-		audio_embedding = model.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1))
 
 	batch = {
 		"input_ids": input_ids,
@@ -133,9 +144,10 @@ def generate_from_wav(wav_path, model, dataset_config, decode_config, logger, de
 	audio_outputs = model_outputs[:code_layer]	
 	output_text = model.tokenizer.decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
 
-	whisper_model = model.whisper_model
-	options = whisper.DecodingOptions()
-	transcribed_text = whisper.decode(whisper_model, audio_embedding.squeeze(0), options).text
+	if transcribed_text is None:
+		whisper_model = model.whisper_model
+		options = whisper.DecodingOptions()
+		transcribed_text = whisper.decode(whisper_model, audio_embedding.squeeze(0), options).text
 	
 	if decode_config.decode_text_only or output_text_only:
 		return None, output_text, " ASSISTANT: " + output_text, transcribed_text
@@ -179,6 +191,7 @@ def generate_from_text(text_input, model, dataset_config, decode_config, logger,
 
 	if decode_config.use_rag:
 		from utils.rag_utils import run_retrieval
+		logger.info("Running retrieval")
 		retrieval_result = run_retrieval(text_input, decode_config)
 		logger.info(f"Retrieval Result: {retrieval_result}")
 		prompt = prompt + "\n" + retrieval_result
