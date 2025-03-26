@@ -33,7 +33,7 @@ num_latency_tokens=0                # number of latency tokens (same as the numb
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
 # load the backbone model
-ckpt_path=/valleblob/v-wenxichen/exp/s2s/zh-single/s2s_train_v4-Qwen2-0.5b-gpu4-btz3-lr1e-4-fp16-epochs10-whisper_small-latency0-group3-chinese-multiround-from_scratch/s2s_epoch_2_step_82467
+ckpt_path=/home/wenxi/mydisk/models/Qwen2-0.5b-whisper_small-latency0-group3-multi-round-Chinese
 
 # model settings
 group_decode=true
@@ -50,13 +50,12 @@ top_p=1.0
 top_k=0
 temperature=1.0
 decode_text_only=false
-input_text=false
 
 output_text_only=false
 speech_sample_rate=22050            # 22050 for CosyVoice, 24000 for SNAC
 inference_online=true
 multi_round=true
-online_output_dir=/home/v-wenxichen/exp/cosyvoice/multi-round-zh
+online_output_dir=/home/wenxi/mydisk/exp/conversation/multi-round-zh
 audio_prompt_path=./examples/s2s/audio_prompt/zh/prompt_6.wav      # replace this with your own audio prompt path or our provided audio prompt path
 # audio_prompt_path=./examples/s2s/audio_prompt/en/prompt_6.wav        # replace this with your own audio prompt path or our provided audio prompt path
 
@@ -133,7 +132,6 @@ python $code_dir/inference_s2s.py \
         ++speech_sample_rate=$speech_sample_rate \
         ++audio_prompt_path=$audio_prompt_path \
         ++multi_round=$multi_round \
-        ++decode_config.input_text=$input_text \
         # ++peft_ckpt_path=$peft_ckpt_path/model.pt \
 
 # bash ./examples/s2s/scripts/inference/inference_s2s_online_multi-round.sh

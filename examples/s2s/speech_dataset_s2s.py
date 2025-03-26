@@ -298,8 +298,8 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
                 target_audio = data_dict.get("answer_cosyvoice_speech_token", None)
             source_text = data_dict.get("question", None)
             target_text = data_dict.get("answer", None)
-            if source_audio is not None:
-                key = source_audio['path']
+            if source_audio is not None and type(source_audio) == dict:
+                key = source_audio.get("path", None)
         elif self.manifest_format == "jsonl":
             source_audio = data_dict.get("source_wav", None)
             target_audio = data_dict.get("target_token", None)
@@ -309,47 +309,59 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         else:
             raise ValueError("manifest_format must be one of [parquet, jsonl]")
 
-        if task_type == "s2s" or task_type == "asr":
+        if task_type in ["s2s", "asr", "s2t"]:
             audio_mel, audio_length = self.extract_audio_feature(source_audio)
         
-        if target_audio is not None:
+        if task_type in ["s2s", "t2s", "tts"]:
             target_audio, target_audio_length = self.extract_audio_feature(target_audio)
 
         if self.fix_length_audio > 0:
             audio_length = self.fix_length_audio
 
-        prompt = self.prompt
+        if "system prompt" in data_dict:
+            prompt = data_dict["system prompt"]
+        else:
+            prompt = self.prompt
         prompt = self.prompt_template.format(prompt)
 
-        # add history conversation after prompt (<prompt> = <prompt> + <history>)
-        if source_text is not None and "<USER>:" in source_text and task_type == "s2s":
-            history_chat = source_text.rsplit("<USER>:", 1)[0].strip()
-            if history_chat:
-                prompt = prompt + history_chat + "\n "
+        if source_text and any(tag in source_text for tag in ["<USER>:", "<OBSERVATION>:"]) and task_type in {"s2s", "t2s"}:
+            for tag in ["<USER>:", "<OBSERVATION>:"]:
+                if tag in source_text:
+                    history_chat = source_text.rsplit(tag, 1)[0].strip()
+                    break
+
+            if history_chat:  
+                prompt += history_chat + "\n "
 
         prompt_ids = self.tokenizer.encode(prompt)
         prompt_ids = [self._input_t] + prompt_ids + [self._eot]
         prompt_length = len(prompt_ids)
         prompt_ids = self.get_padded_input(prompt_ids, prompt_length)
 
-        if task_type == "s2s" or task_type == "asr":
+        if task_type in ["s2s", "asr", "s2t"]:
             example_ids = self.get_input_ids(audio_length, self.special_token_a, self.special_token_t)
             example_ids = [torch.cat((prompt_ids[i], example_ids[i]), dim = 1) for i in range(self.code_layer + 1)] # 1 for text layer
-        elif task_type == "tts":
-            target_text_ids = self.tokenizer.encode(target_text)
-            target_text_length = len(target_text_ids)
-            target_text_ids = torch.tensor(target_text_ids, dtype=torch.int64)
-            example_ids = self.get_input_ids(target_text_length, self.special_token_a, self.special_token_t) # <prompt> <bos> <text> <eos> <task>
+        elif task_type in ["tts", "t2s"]:
+            text_input = target_text if self.task_type == "tts" else source_text
+            if task_type == "t2s" and any(tag in text_input for tag in ["<USER>:", "<OBSERVATION>:"]):
+                for tag in ["<USER>:", "<OBSERVATION>:"]:
+                    if tag in text_input:
+                        text_input = text_input.rsplit(tag, 1)[-1].strip()
+                        break
+            text_input_ids = self.tokenizer.encode(text_input)
+            text_input_length = len(text_input_ids)
+            text_input_ids = torch.tensor(text_input_ids, dtype=torch.int64)
+            example_ids = self.get_input_ids(text_input_length, self.special_token_a, self.special_token_t) # <prompt> <bos> <text> <eos> <task>
             text_layer = example_ids[self.code_layer]
-            text_layer = torch.cat((text_layer[:,:1], target_text_ids.unsqueeze(0), text_layer[:,-2:]), dim=1)
+            text_layer = torch.cat((text_layer[:,:1], text_input_ids.unsqueeze(0), text_layer[:,-2:]), dim=1)
             example_ids[self.code_layer] = text_layer
             example_ids = [torch.cat((prompt_ids[i], example_ids[i]), dim = 1) for i in range(self.code_layer + 1)]
         else:
             raise ValueError(f"task_type {task_type} is not supported")
 
         input_length = audio_length
-        if task_type == "tts":
-            input_length = target_text_length
+        if task_type in ["tts", "t2s"]:
+            input_length = text_input_length
 
         if task_type == "asr":
             if "<USER>:" in source_text:

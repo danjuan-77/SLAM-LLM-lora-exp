@@ -97,6 +97,7 @@ class ModelConfig:
     group_decode: bool = False
     group_decode_adapter_type: str = "linear"
     whisper_decode: bool = False
+    tokenizer_path: Optional[str] = None
 
 
 @dataclass
@@ -213,6 +214,36 @@ class DataConfig:
     interleaved_audio_token_num: int = 36
 
 @dataclass
+class RAGConfig:
+    framework: str = field(default="langchain", metadata={
+        "help": "Framework used for Retrieval-Augmented Generation. Currently supports only 'langchain'."
+    })
+    vector_store_type: str = field(default="faiss", metadata={
+        "help": "Type of vector database to use. Options: 'faiss' or 'chroma'."
+    })
+    vector_store_path: str = field(default="path/to/vector/store", metadata={
+        "help": "Path to the pre-built vector store or database."
+    })
+    embedding_model_name: str = field(default="BAAI/bge-m3", metadata={
+        "help": "Name of the embedding model used for document retrieval."
+    })
+    top_k: int = field(default=3, metadata={
+        "help": "Number of top relevant documents to retrieve."
+    })
+    use_mmr: bool = field(default=False, metadata={
+        "help": "Whether to use Maximal Marginal Relevance (MMR) for diverse retrieval results."
+    })
+    search_score_threshold: Optional[float] = field(default=None, metadata={
+        "help": "Optional minimum score threshold. Retrieved documents below this score will be filtered out."
+    })
+    chunk_size: Optional[int] = field(default=512, metadata={
+        "help": "Chunk size used for splitting or displaying retrieved documents."
+    })
+    return_source_documents: bool = field(default=True, metadata={
+        "help": "Whether to return source documents along with generated answers (for explainability/debugging)."
+    })
+
+@dataclass
 class DecodeConfig:
     do_sample: bool = False
     max_new_tokens: int = 256
@@ -240,6 +271,8 @@ class DecodeConfig:
     input_text: bool = False
     do_layershift: bool = True
     num_latency_tokens: int = 0
+    use_rag: bool = False
+    rag_config: RAGConfig = field(default_factory=RAGConfig)
 
 @dataclass
 class FSDPConfig:

@@ -70,9 +70,9 @@ def get_padded_input(text_input_idx, text_index_length, code_layer, _pad_a, laye
 	return padded_input
 
 
-def generate_from_wav(wav_path, model, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path=None, output_text_only=False, history="", layer_shift=layershift):
+def generate_from_wav(wav_path, model, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path=None, output_text_only=False, history="", layer_shift=layershift, system_prompt=None):
 	mel_size = dataset_config.mel_size
-	prompt = dataset_config.prompt
+	prompt = dataset_config.prompt if system_prompt is None else system_prompt
 	prompt_template = "<SYSTEM>: {}\n {}"
 	# prompt_template = "USER: {}\n ASSISTANT: "	# note: old version
 	vocab_config = dataset_config.vocab_config
@@ -84,11 +84,28 @@ def generate_from_wav(wav_path, model, dataset_config, decode_config, logger, de
 	task_type = dataset_config.task_type
 	code_type = model_config.code_type
 	num_latency_tokens = dataset_config.num_latency_tokens
+	audio_embedding = None
+	transcribed_text = None
 
 	audio_mel, audio_length = extract_audio_feature(wav_path, mel_size)
+	audio_mel = audio_mel.unsqueeze(0).to(device)
+	model.encoder.eval()
+	if model_config.encoder_name == "whisper":
+		audio_embedding = model.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1))
 
 	prompt = prompt_template.format(prompt, history)
 	# prompt = prompt_template.format(prompt)		# note: old version
+
+	if decode_config.use_rag:
+		from utils.rag_utils import run_retrieval
+		logger.info("Running retrieval")
+		whisper_model = model.whisper_model
+		options = whisper.DecodingOptions()
+		transcribed_text = whisper.decode(whisper_model, audio_embedding.squeeze(0), options).text
+		retrieval_result = run_retrieval(transcribed_text, decode_config)
+		logger.info(f"Retrieval Result: {retrieval_result}")
+		prompt = prompt + "\n" + retrieval_result
+
 	prompt_ids = model.tokenizer.encode(prompt)
 	prompt_ids = [_input_t] + prompt_ids + [_eot]
 	prompt_length = len(prompt_ids)
@@ -103,7 +120,6 @@ def generate_from_wav(wav_path, model, dataset_config, decode_config, logger, de
 
 	input_ids = example_ids.unsqueeze(0).to(device)
 	attention_mask = example_mask.unsqueeze(0).to(device)
-	audio_mel = audio_mel.unsqueeze(0).to(device)
 	input_length = torch.tensor([input_length]).to(device)
 	audio_length = torch.tensor([audio_length]).to(device)
 	task_type = [task_type]
@@ -111,11 +127,6 @@ def generate_from_wav(wav_path, model, dataset_config, decode_config, logger, de
 	modality_mask = torch.zeros_like(attention_mask)
 	padding_left = prompt_length + 1 # +1 for <bos>
 	modality_mask[0, padding_left:padding_left+audio_length] = True
-
-	model.encoder.eval()
-	audio_embedding = None
-	if model_config.encoder_name == "whisper":
-		audio_embedding = model.encoder.extract_variable_length_features(audio_mel.permute(0, 2, 1))
 
 	batch = {
 		"input_ids": input_ids,
@@ -133,10 +144,10 @@ def generate_from_wav(wav_path, model, dataset_config, decode_config, logger, de
 	audio_outputs = model_outputs[:code_layer]	
 	output_text = model.tokenizer.decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
 
-	whisper_model = model.whisper_model
-	options = whisper.DecodingOptions()
-	result = whisper.decode(whisper_model, audio_embedding.squeeze(0), options)
-	transcribed_text = result.text
+	if transcribed_text is None:
+		whisper_model = model.whisper_model
+		options = whisper.DecodingOptions()
+		transcribed_text = whisper.decode(whisper_model, audio_embedding.squeeze(0), options).text
 	
 	if decode_config.decode_text_only or output_text_only:
 		return None, output_text, " ASSISTANT: " + output_text, transcribed_text
@@ -161,8 +172,8 @@ def generate_from_wav(wav_path, model, dataset_config, decode_config, logger, de
 	return audio_hat, output_text, " ASSISTANT: " + output_text, transcribed_text
 
 
-def generate_from_text(text_input, model, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path=None, output_text_only=False, history="", layer_shift=layershift):
-	prompt = dataset_config.prompt
+def generate_from_text(text_input, model, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path=None, output_text_only=False, history="", layer_shift=layershift, system_prompt=None):
+	prompt = dataset_config.prompt if system_prompt is None else system_prompt
 	prompt_template = "<SYSTEM>: {}\n {} "
 	# prompt_template = "USER: {}\n ASSISTANT: "	# note: old version
 	vocab_config = dataset_config.vocab_config
@@ -177,6 +188,14 @@ def generate_from_text(text_input, model, dataset_config, decode_config, logger,
 
 	prompt = prompt_template.format(prompt, history)
 	# prompt = prompt_template.format(prompt)		# note: old version
+
+	if decode_config.use_rag:
+		from utils.rag_utils import run_retrieval
+		logger.info("Running retrieval")
+		retrieval_result = run_retrieval(text_input, decode_config)
+		logger.info(f"Retrieval Result: {retrieval_result}")
+		prompt = prompt + "\n" + retrieval_result
+
 	prompt_ids = model.tokenizer.encode(prompt)
 	prompt_ids = [_input_t] + prompt_ids + [_eot]
 	prompt_length = len(prompt_ids)
@@ -330,11 +349,6 @@ def main(kwargs: DictConfig):
 	else:
 		logger.info("Decode Strategy: Greedy")
 
-	if decode_config.input_text:
-		logger.info("Input Text")
-	else:
-		logger.info("Input Audio")
-
 	if decode_config.decode_text_only:
 		logger.info("Decode Text Only")
 	else:
@@ -344,18 +358,25 @@ def main(kwargs: DictConfig):
 	logger.info("Decode Code Layer: {}".format(code_layer))
 	logger.info("Tone for Audio Generation: {}".format(tone_dir))
 
+	system_prompt = dataset_config.prompt
+	logger.info("System Prompt: {}".format(system_prompt))
+
 	history = ""
 	conversation_count = 1
 	chat_count = 1
 	conversation_dir = os.path.join(tone_audio_dir, f"conversation_{conversation_count}")
 	os.makedirs(conversation_dir, exist_ok=True)
 	logger.info("============== Ready for {task_type} Online Inference ==============".format(task_type=task_type))
-	if decode_config.input_text:
-		while True:
-			text_input = input("Please provide the text input (or type 'q' to quit, 'c' to clear history, 'h' to see the history): ")
-			if text_input.lower() == 'q':
+
+	mode = "audio"  # initial mode is text input
+
+	while True:
+		if mode == "text":
+			user_input = input("Please provide the text input (or type 'q' to quit, 'c' to clear history, 'h' to see the history, 'a' to switch to audio input, 's' to see the system prompt, 'cs' to change the system prompt): ")
+			cmd = user_input.strip().lower()
+			if cmd == 'q':
 				break
-			elif text_input.lower() == 'c':
+			elif cmd == 'c':
 				if history == "":
 					logger.info("History is already empty.")
 					continue
@@ -364,13 +385,27 @@ def main(kwargs: DictConfig):
 				chat_count = 1
 				conversation_dir = os.path.join(tone_audio_dir, f"conversation_{conversation_count}")
 				os.makedirs(conversation_dir, exist_ok=True)
-				logger.info("History cleared. Starting a new round of conversation.")
+				logger.info("History cleared. Starting a new conversation round.")
 				continue
-			elif text_input.lower() == 'h':
+			elif cmd == 'h':
 				logger.info(f"History: {history}")
 				continue
+			elif cmd == 'a':
+				mode = "audio"  # switch to audio mode
+				continue
+			elif cmd == 's':
+				logger.info(f"System Prompt: {system_prompt}")
+				continue
+			elif cmd == 'cs':
+				system_prompt = input("Please provide the new system prompt: ")
+				logger.info(f"System Prompt changed to: {system_prompt}")
+				continue
 
-			audio_hat, output_text, history = generate_from_text(text_input, model, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path, output_text_only, history, layer_shift)
+			# Call the text generation function
+			audio_hat, output_text, history = generate_from_text(
+				user_input, model, dataset_config, decode_config, logger, device, model_config,
+				tone_dir, audio_prompt_path, output_text_only, history, layer_shift, system_prompt
+			)
 			logger.info(f"Generated Text: {output_text}")
 
 			if tone_audio_dir is not None:
@@ -378,12 +413,13 @@ def main(kwargs: DictConfig):
 				chat_count += 1
 				sf.write(output_wav_path, audio_hat.squeeze().cpu().numpy(), speech_sample_rate)
 				logger.info(f"Generated Audio saved at: {output_wav_path}")
-	else:
-		while True:
-			wav_path = input("Please provide the path to a WAV file (or type 'q' to quit, 'c' to clear history, 'h' to see the history): ")
-			if wav_path.lower() == 'q':
+
+		elif mode == "audio":
+			wav_input = input("Please provide the path to a WAV file (or type 'q' to quit, 'c' to clear history, 'h' to see the history, 't' to switch to text input, 's' to see the system prompt, 'cs' to change the system prompt): ")
+			cmd = wav_input.strip().lower()
+			if cmd == 'q':
 				break
-			elif wav_path.lower() == 'c':
+			elif cmd == 'c':
 				if history == "":
 					logger.info("History is already empty.")
 					continue
@@ -392,35 +428,46 @@ def main(kwargs: DictConfig):
 				chat_count = 1
 				conversation_dir = os.path.join(tone_audio_dir, f"conversation_{conversation_count}")
 				os.makedirs(conversation_dir, exist_ok=True)
-				logger.info("History cleared. Starting a new round of conversation.")
+				logger.info("History cleared. Starting a new conversation round.")
 				continue
-			elif wav_path.lower() == 'h':
+			elif cmd == 'h':
 				logger.info(f"History: {history}")
 				continue
-
-			if not os.path.exists(wav_path):
-				logger.warning(f"File {wav_path} does not exist. Please try again.")
+			elif cmd == 't':
+				mode = "text"  # switch back to text mode
 				continue
-			
-			output_wav, output_text, history_assistant, transcribed_text = generate_from_wav(
-				wav_path, model, dataset_config, decode_config, logger, device, model_config, 
-				tone_dir, audio_prompt_path, output_text_only, history, layer_shift
-			)
+			elif cmd == 's':
+				logger.info(f"System Prompt: {system_prompt}")
+				continue
+			elif cmd == 'cs':
+				system_prompt = input("Please provide the new system prompt: ")
+				logger.info(f"System Prompt changed to: {system_prompt}")
+				continue
 
-			logger.info(f"Adding the transcribed text to the history: {transcribed_text}")
+			if not os.path.exists(wav_input):
+				logger.warning(f"File {wav_input} does not exist. Please try again.")
+				continue
+
+			output_wav, output_text, history_assistant, transcribed_text = generate_from_wav(
+				wav_input, model, dataset_config, decode_config, logger, device, model_config,
+				tone_dir, audio_prompt_path, output_text_only, history, layer_shift, system_prompt
+			)
+			logger.info(f"Adding the transcribed text to history: {transcribed_text}")
 			history_user = "USER: " + transcribed_text.strip() + " "
 			history = history + history_user + history_assistant.strip() + " "
 			logger.info(f"Generated Text: {output_text}")
 
 			if output_wav is None:
-				logger.warning(f"Generated Audio is None. Please try again.")
+				logger.warning("Generated Audio is None. Please try again.")
 				continue
 
 			if tone_audio_dir is not None:
 				output_wav_path = os.path.join(conversation_dir, f"chat_{chat_count}.wav")
 				chat_count += 1
-				sf.write(output_wav_path, output_wav.squeeze().cpu().numpy(), speech_sample_rate)		
+				sf.write(output_wav_path, output_wav.squeeze().cpu().numpy(), speech_sample_rate)
 				logger.info(f"Generated Audio saved at: {output_wav_path}")
+
+
 		
 	logger.info("============== Online Inference Finished ==============")
 
