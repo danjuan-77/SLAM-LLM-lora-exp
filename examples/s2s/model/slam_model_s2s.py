@@ -322,7 +322,12 @@ class slam_model_s2s(slam_model):
                 elif self.train_config.modeling_paradigm == "interleaved":
                     preds_start_idx = (text_labels != -100).float().argmax(dim=1)
                     preds = torch.argmax(x_ori, -1)
-                    new_preds, new_labels = self.extract_interleaved_tokens(preds, text_labels, preds_start_idx)
+
+                    if self.train_config.task_type in ["s2s", "t2s", "tts"]:
+                        new_preds, new_labels = self.extract_interleaved_tokens(preds, text_labels, preds_start_idx)
+                    else:
+                        new_preds = preds
+                        new_labels = text_labels
                     
                     # padding token is not counted in text_acc
                     pad_token = self.model_config.vocab_config.pad_t

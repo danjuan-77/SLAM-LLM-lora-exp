@@ -29,7 +29,6 @@ total_vocabsize=$((total_audio_vocabsize + llm_vocabsize))
 
 # code settings
 code_type=CosyVoice                 # CosyVoice or SNAC
-num_latency_tokens=0                # number of delay tokens (in front of the generated audio tokens)
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
 # dataset settings
@@ -109,7 +108,6 @@ hydra.run.dir=$output_dir \
 ++dataset_config.vocab_config.total_audio_vocabsize=$total_audio_vocabsize \
 ++dataset_config.vocab_config.total_vocabsize=$total_vocabsize \
 ++dataset_config.code_type=$code_type \
-++dataset_config.num_latency_tokens=$num_latency_tokens \
 ++dataset_config.do_layershift=$do_layershift \
 ++train_config.model_name=s2s \
 ++train_config.num_epochs=$num_epochs \

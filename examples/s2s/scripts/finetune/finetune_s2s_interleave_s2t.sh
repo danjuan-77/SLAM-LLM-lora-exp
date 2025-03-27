@@ -13,65 +13,57 @@ num_gpus=$(( num_gpus_per_node * num_nodes ))
 
 whisper_size=small                  # tiny base small medium large-v3
 speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # different whisper size
-# llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B-Instruct/snapshots/c540970f9e29518b1d8f06ab8b24cba66ad77b6d"
-llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"
-llm_name=Qwen2-0.5b
-tokenizer_path="/valleblob/v-wenxichen/models/tokenizer/qwen2_tokenizer_fc"
+llm_path="/home/wenxi/mydisk/models/qwen/qwen2.5-0.5b"  # Qwen/Qwen2-0.5B, you can choose other Qwen models (Qwen2 or Qwen2.5)
+llm_name=Qwen2.5-0.5b
 
 encoder_dim=768                     # 384 512 768 1024 1280
 mel_size=80                         # 80 128 ( only whisper-large-v3 supports 128 )
 llm_dim=896                         # 896 1536 2048 3584  -> 0.5B 1.5B 3B 7B
 
 # vocabulary settings
-code_layer=3                        # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 
+code_layer=0                        # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers  0 for interleaved paradigm
 total_audio_vocabsize=4160          # the vocab size of the codec token
 llm_vocabsize=152000                # the vocab size of the LLM model (Qwen2 here)
 total_vocabsize=$((total_audio_vocabsize + llm_vocabsize))
 
 # code settings
 code_type=CosyVoice                 # CosyVoice or SNAC
-num_latency_tokens=0                # number of delay tokens (in front of the generated audio tokens)
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
 # dataset settings
 manifest_format=parquet             # parquet or jsonl
-train_data_path=/home/wenxi/mydisk/data/function_call/parquet_data_fc/parquet_fc1
-val_data_path=/home/wenxi/mydisk/data/function_call/parquet_data_fc/parquet_fc1
+train_data_path=/home/wenxi/mydisk/data/distll_clean/SLAM-Omni_distill_parquet
+val_data_path=/home/wenxi/mydisk/data/distll_clean/SLAM-Omni_distill_parquet
 load_from_cache_file=true           # set to true if you have already generated the cache file, otherwise set to false
+cache_dir=/home/wenxi/mydisk/data/VA-cache  # you could set the cache_dir if load_from_cache_file=true and the cache file is not in the default cache_dir
 
 # training settings
-batch_size_training=4
+modeling_paradigm=interleaved
+interleaved_text_token_num=12
+interleaved_audio_token_num=36
+batch_size_training=6
 use_fp16=true
 use_peft=false
 num_epochs=10
-lr=1e-5
-task_type=t2s
-warmup_steps=800
-total_steps=8000
+lr=1e-4
+task_type=s2t
+warmup_steps=1000
+total_steps=100000
+gradient_accumulation_steps=1
 
 # validation settings
-validation_interval=300
+validation_interval=3000
 split_size=0.01
 
-# model settings
-group_decode=true
-group_decode_adapter_type=linear
 
-# log settings
-# exp_name="s2s_train_v4-${llm_name}-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-nofp16-epochs${num_epochs}-whisper_${whisper_size}-latency${num_latency_tokens}-group${code_layer}"
-# if [ "$use_fp16" = true ]; then
-#     exp_name="s2s_train_v4-${llm_name}-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-fp16-epochs${num_epochs}-whisper_${whisper_size}-latency${num_latency_tokens}-group${code_layer}"
-# fi
-
-exp_name="gpu${num_gpus}-btz${batch_size_training}-lr${lr}-SLAM-Omni_fine-tuning-chinese_multi_round-function_call-tokenizer_change"
-
+exp_name="gpu${num_gpus}-btz${batch_size_training}-lr${lr}-interleave_text${interleaved_text_token_num}_audio${interleaved_audio_token_num}-Qwen2.5-0.5b-s2t"
 exp_name="debug"
 wandb_entity_name=1029713857
 wandb_project_name=SLAM-Omni-Interleaved
 
 home_dir=/valleblob/v-wenxichen/exp/s2s-interleave
 output_dir=$home_dir/$exp_name
-ckpt_path=/home/wenxi/mydisk/models/Qwen2-0.5b-whisper_small-latency0-group3-multi-round-Chinese
+# ckpt_path=/valleblob/v-wenxichen/exp/s2s-interleave/gpu4-btz2-lr1e-4-interleave_text12_audio36/gpu4-btz2-lr1e-4-interleave_text12_audio36-s2s_epoch_3_step_33390  # this line is for resuming training
 
 if [ "$exp_name" = "debug" ]; then
     use_wandb=false
@@ -79,6 +71,7 @@ else
     use_wandb=true
 fi
 wandb_exp_name=$exp_name
+# use_wandb=false
 
 hydra_args="
 hydra.run.dir=$output_dir \
@@ -94,9 +87,6 @@ hydra.run.dir=$output_dir \
 ++model_config.vocab_config.total_audio_vocabsize=$total_audio_vocabsize \
 ++model_config.vocab_config.total_vocabsize=$total_vocabsize \
 ++model_config.code_type=$code_type \
-++model_config.group_decode=$group_decode \
-++model_config.group_decode_adapter_type=$group_decode_adapter_type \
-++model_config.tokenizer_path=$tokenizer_path \
 ++dataset_config.dataset=speech_dataset_s2s \
 ++dataset_config.train_data_path=$train_data_path \
 ++dataset_config.val_data_path=$val_data_path \
@@ -108,11 +98,13 @@ hydra.run.dir=$output_dir \
 ++dataset_config.load_from_cache_file=$load_from_cache_file \
 ++dataset_config.task_type=$task_type \
 ++dataset_config.vocab_config.code_layer=$code_layer \
-++dataset_config.vocab_config.total_audio_vocabsize=$total_audio_vocabsize \
 ++dataset_config.vocab_config.total_vocabsize=$total_vocabsize \
 ++dataset_config.code_type=$code_type \
-++dataset_config.num_latency_tokens=$num_latency_tokens \
 ++dataset_config.do_layershift=$do_layershift \
+++dataset_config.modeling_paradigm=$modeling_paradigm \
+++dataset_config.interleaved_text_token_num=$interleaved_text_token_num \
+++dataset_config.interleaved_audio_token_num=$interleaved_audio_token_num \
+++dataset_config.cache_dir=$cache_dir \
 ++train_config.model_name=s2s \
 ++train_config.num_epochs=$num_epochs \
 ++train_config.freeze_encoder=true \
@@ -129,6 +121,10 @@ hydra.run.dir=$output_dir \
 ++train_config.use_fp16=$use_fp16 \
 ++train_config.task_type=$task_type \
 ++train_config.use_peft=$use_peft \
+++train_config.modeling_paradigm=$modeling_paradigm \
+++train_config.interleaved_text_token_num=$interleaved_text_token_num \
+++train_config.interleaved_audio_token_num=$interleaved_audio_token_num \
+++train_config.gradient_accumulation_steps=$gradient_accumulation_steps \
 ++metric=acc \
 ++log_config.use_wandb=$use_wandb \
 ++log_config.wandb_entity_name=$wandb_entity_name \
@@ -137,7 +133,6 @@ hydra.run.dir=$output_dir \
 ++log_config.wandb_dir=$output_dir \
 ++log_config.log_file=$output_dir/exp.log \
 ++log_config.log_interval=100 \
-++ckpt_path=$ckpt_path/model.pt \
 "
 # ++ckpt_path=$ckpt_path/model.pt \
 # ↑ this line is for resuming training
@@ -159,7 +154,7 @@ else
     torchrun \
         --nnodes $num_nodes \
         --nproc_per_node $num_gpus_per_node \
-        --master_port=29503 \
+        --master_port=1234 \
         $code_dir/finetune_s2s.py \
         --config-path "conf" \
         --config-name "prompt.yaml" \
@@ -172,4 +167,4 @@ fi
 # --node_rank=$node_rank \
 # --master_addr=$master_addr \
 
-# bash examples/s2s/scripts/finetune/other/finetune_s2s_group_fc_finetune.sh
+# bash examples/s2s/scripts/finetune/finetune_s2s_interleave_s2t.sh
