@@ -53,7 +53,6 @@ top_p=1.0
 top_k=0
 temperature=1.0
 decode_text_only=false
-input_text=false
 
 output_text_only=false
 speech_sample_rate=22050            # 22050 for CosyVoice, 24000 for SNAC

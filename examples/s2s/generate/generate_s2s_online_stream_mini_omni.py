@@ -267,11 +267,6 @@ def main(kwargs: DictConfig):
 	else:
 		logger.info("Decode Strategy: Greedy")
 
-	if decode_config.input_text:
-		logger.info("Input Text")
-	else:
-		logger.info("Input Audio")
-
 
 	if decode_config.decode_text_only:
 		logger.info("Decode Text Only")
@@ -281,14 +276,19 @@ def main(kwargs: DictConfig):
 	logger.info("Decode Code Type: {}".format(code_type))
 	logger.info("Decode Code Layer: {}".format(code_layer))
 
+	mode = "audio"
 
-	if decode_config.input_text:
-		logger.info("============== Ready for t2s Online Inference (Streaming Version) ==============")
-		while True:
-			text_input = input("Please provide the text input (or type 'q' to quit): ")
-			if text_input.lower() == 'q':
+	while True:
+		if mode == "text":
+			user_input = input("Please provide the text input (or type 'q' to quit, type 'a' to switch to audio mode): ")
+			cmd = user_input.strip().lower()
+			if cmd == 'q':
 				break
+			elif cmd == 'a':
+				mode = "audio"
+				continue
 			
+			text_input = user_input
 			if output_dir is not None:
 				os.makedirs(output_dir, exist_ok=True)
 				output_wav_path = os.path.join(output_dir, f"generated_{text_input.replace(' ', '_')[:20]}.wav")
@@ -302,13 +302,16 @@ def main(kwargs: DictConfig):
 			save_streamed_audio(audio_generator, output_wav_path, model, logger)
 			logger.info(f"Generated Audio saved at: {output_wav_path}")
 	
-	else:
-		logger.info("============== Ready for {task_type} Online Inference (Streaming Version) ==============".format(task_type=task_type))
-		while True:
-			wav_path = input("Please provide the path to a WAV file (or type 'q' to quit): ")
-			if wav_path.lower() == 'q':
+		elif mode == "audio":
+			wav_input = input("Please provide the path to a WAV file (or type 'q' to quit, type 't' to switch to text mode): ")
+			cmd = wav_input.strip().lower()
+			if cmd == 'q':
 				break
+			if cmd == 't':
+				mode = "text"
+				continue
 
+			wav_path = wav_input
 			if not os.path.exists(wav_path):
 				logger.warning(f"File {wav_path} does not exist. Please try again.")
 				continue

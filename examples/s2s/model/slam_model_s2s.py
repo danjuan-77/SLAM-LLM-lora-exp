@@ -439,10 +439,10 @@ class slam_model_s2s(slam_model):
                 temperature=kwargs.get("temperature", 1.0),
                 attention_mask=attention_mask,
                 bos_token_id=self.tokenizer.bos_token_id,
-                eos_token_id=layershift(eoa, 0),
+                eos_token_id=layershift(eoa, 0) if self.train_config.task_type in ["s2s", "t2s", "tts"] else eot,
                 pad_token_id=self.tokenizer.pad_token_id
             )
-            model_outputs = self.process_interleaved_output(model_outputs)
+            model_outputs = self.process_interleaved_output(model_outputs) if self.train_config.task_type in ["s2s", "t2s", "tts"] else {"text": model_outputs.squeeze(0), "audio": None}
             return model_outputs
 
         # NOTE: currently, we only support greedy decoding and sampling for parallel generation, no beam search

@@ -46,7 +46,6 @@ top_p=1.0
 top_k=0
 temperature=1.0
 decode_text_only=false
-input_text=true
 
 output_text_only=false
 speech_sample_rate=22050            # 22050 for CosyVoice, 24000 for SNAC
@@ -117,6 +116,5 @@ python $code_dir/inference_s2s.py \
         ++inference_online=$inference_online \
         ++speech_sample_rate=$speech_sample_rate \
         ++audio_prompt_path=$audio_prompt_path \
-        ++decode_config.input_text=$input_text \
 
 # bash ./examples/s2s/scripts/inference/inference_tts_online.sh
