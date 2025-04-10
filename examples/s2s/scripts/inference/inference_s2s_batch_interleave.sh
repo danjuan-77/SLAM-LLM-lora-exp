@@ -1,5 +1,5 @@
 #!/bin/bash
-export CUDA_VISIBLE_DEVICES=3
+export CUDA_VISIBLE_DEVICES=1
 export TOKENIZERS_PARALLELISM=false
 export OMP_NUM_THREADS=1
 export LD_LIBRARY_PATH=/home/v-wenxichen/anaconda3/envs/slam/lib:$LD_LIBRARY_PATH
@@ -47,9 +47,9 @@ lora_alpha=$((lora_r * 2))
 
 # huggingface dataset
 manifest_format=parquet
-val_data_path=TwinkStart/speech-web-questions        # llama-questions speech-triavia-qa speech-web-questions
+val_data_path=TwinkStart/llama-questions        # llama-questions speech-triavia-qa speech-web-questions
 load_from_cache_file=true
-DATASET_NAME=web_qa # llama_qa trivia_qa web_qa
+DATASET_NAME=llama_qa # llama_qa trivia_qa web_qa
 cache_dir=/home/wenxi/mydisk/data/standard_qa_eval/$DATASET_NAME
 
 # decode config

@@ -54,12 +54,18 @@ def evaluate(pred_file: str, gt_file: str, use_exist_match: bool = False):
 
     for key in gts:
         if key not in preds:
-            
+            print(f"[Warning] Missing prediction for key: {key}")
             continue
         total += 1
         pred = preds[key]
-        gt = gts[key]
-        match = exist_match(pred, gt) if use_exist_match else exact_match(pred, gt)
+        gt_text = gts[key]
+        gt_list = [s.strip() for s in gt_text.split("|||") if s.strip()]  # split refs
+
+        match = any(
+            exist_match(pred, gt) if use_exist_match else exact_match(pred, gt)
+            for gt in gt_list
+        )
+
         if match:
             correct += 1
 
