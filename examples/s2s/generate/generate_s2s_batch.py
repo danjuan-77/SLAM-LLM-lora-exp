@@ -190,6 +190,8 @@ def main(kwargs: DictConfig):
 			# output_text = model.tokenizer.batch_decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
 			output_text = model.tokenizer.decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
 			for key, source_text, target_text, generated_text in zip(batch["keys"], batch["source_texts"], batch["target_texts"], [output_text]):
+				if type(target_text) == list:
+					target_text = "|||".join(target_text)
 				q.write(key + "\t" + source_text + "\n")
 				gt.write(key + "\t" + target_text + "\n")
 				pred.write(key + "\t" + generated_text + "\n")

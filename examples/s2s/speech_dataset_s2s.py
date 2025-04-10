@@ -7,6 +7,7 @@ import torch
 import whisper
 from utils.snac_utils import layershift, get_snac_answer_token, simple_shift
 from utils.codec_utils import get_single_layer_answer_token, get_group_answer_token
+from utils.dataset_utils import get_first_existing_value
 import librosa
 
 
@@ -98,11 +99,16 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
                 ds = load_dataset(dataset_config.train_data_path, cache_dir=dataset_config.cache_dir)
             else:
                 ds = load_from_disk(dataset_config.train_data_path)   # load_from local disk
-            train_val_split = ds['train'].train_test_split(test_size=self.split_size, seed=self.seed)
-            if split == "train":
-                self.data_list = train_val_split['train']
-            else:
-                self.data_list = train_val_split['test']
+
+            if split == "train" or ( split == "test" and "test" not in ds):
+                train_val_split = ds['train'].train_test_split(test_size=self.split_size, seed=self.seed)
+                if split == "train":
+                    self.data_list = train_val_split['train']
+                else:
+                    self.data_list = train_val_split['test']
+            elif split == "test":
+                self.data_list = ds['test']
+
         elif self.manifest_format == "jsonl":
             if split == "train":
                 with open(dataset_config.train_data_path, encoding='utf-8') as fin:
@@ -291,13 +297,13 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         target_audio_length = 0
 
         if self.manifest_format == "parquet":
-            source_audio = data_dict.get("question_audio", None)
+            source_audio = get_first_existing_value(data_dict, ["question_audio", "question_wav", "source_wav", "audio"])
             if self.code_type == "SNAC":
                 target_audio = data_dict.get("answer_snac", None)
             elif self.code_type == "CosyVoice":
                 target_audio = data_dict.get("answer_cosyvoice_speech_token", None)
-            source_text = data_dict.get("question", None)
-            target_text = data_dict.get("answer", None)
+            source_text = get_first_existing_value(data_dict, ["question", "question_text", "Questions"])
+            target_text = get_first_existing_value(data_dict, ["answer", "answer_text", "Answer", "answers", "Answers"])
             if source_audio is not None and type(source_audio) == dict:
                 key = source_audio.get("path", None)
         elif self.manifest_format == "jsonl":
@@ -312,7 +318,7 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         if task_type in ["s2s", "asr", "s2t"]:
             audio_mel, audio_length = self.extract_audio_feature(source_audio)
         
-        if task_type in ["s2s", "t2s", "tts"]:
+        if task_type in ["s2s", "t2s", "tts"] and target_audio is not None:
             target_audio, target_audio_length = self.extract_audio_feature(target_audio)
         elif task_type in ["asr", "s2t"]:
             target_audio, target_audio_length = None, 0
