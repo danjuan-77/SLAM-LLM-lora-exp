@@ -1,6 +1,7 @@
 import argparse
 import unicodedata
 import string
+import json
 import re
 
 def normalize_text(s: str) -> str:
@@ -44,13 +45,35 @@ def read_tsv(path: str) -> dict:
             data[key] = val
     return data
 
+def read_jsonl(path: str) -> tuple:
+    """
+    Reads a JSONL file and returns two dicts: preds, gts
+    Assumes each line contains {"predict": ..., "label": ...}
+    """
+    preds, gts = {}, {}
+    with open(path, 'r', encoding='utf-8') as f:
+        for i, line in enumerate(f):
+            try:
+                data = json.loads(line)
+                key = f"sample_{i}"
+                preds[key] = data["predict"]
+                gts[key] = data["label"]
+            except Exception as e:
+                print(f"[Error] Failed to parse line {i}: {e}")
+    return preds, gts
 
-def evaluate(pred_file: str, gt_file: str, use_exist_match: bool = False):
-    preds = read_tsv(pred_file)
-    gts = read_tsv(gt_file)
+def evaluate(pred_file: str, gt_file: str, use_exist_match: bool = False, file_format: str = "tsv", show_mixmatch: bool = False):
+    if file_format == "tsv":
+        preds = read_tsv(pred_file)
+        gts = read_tsv(gt_file)
+    elif file_format == "jsonl":
+        preds, gts = read_jsonl(pred_file)
+    else:
+        raise ValueError(f"Unsupported file format: {file_format}")
 
     total = 0
     correct = 0
+    mismatches = []
 
     for key in gts:
         if key not in preds:
@@ -68,20 +91,28 @@ def evaluate(pred_file: str, gt_file: str, use_exist_match: bool = False):
 
         if match:
             correct += 1
+        else:
+            mismatches.append((key, gt_text, pred))
 
     accuracy = correct / total if total > 0 else 0
     print(f"Total: {total}")
     print(f"Correct: {correct}")
     print(f"Accuracy: {accuracy:.2%}")
+    if mismatches and show_mixmatch:
+        print(f"\n[Examples of Incorrect Predictions] ({len(mismatches)} shown)")
+        for key, gt, pred in mismatches[:10]:
+            print(f"{key}\n  GTs : {gt}\n  Pred: {pred}\n")
 
 def main():
     parser = argparse.ArgumentParser(description="Evaluate model predictions using exact or existence match.")
     parser.add_argument('--pred', type=str, required=True, help='Path to prediction TSV file.')
     parser.add_argument('--gt', type=str, required=True, help='Path to ground truth TSV file.')
     parser.add_argument('--exist', action='store_true', help='Use existence match instead of exact match.')
+    parser.add_argument('--format', type=str, default='tsv', choices=['tsv', 'jsonl'], help='File format of the input files.')
+    parser.add_argument('--show-mixmatch', action='store_true', help='Show mixed match examples.')
 
     args = parser.parse_args()
-    evaluate(args.pred, args.gt, use_exist_match=args.exist)
+    evaluate(args.pred, args.gt, use_exist_match=args.exist, file_format=args.format, show_mixmatch=args.show_mixmatch)
 
 if __name__ == "__main__":
     main()
