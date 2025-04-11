@@ -5,7 +5,7 @@ import json
 import re
 
 def normalize_text(s: str) -> str:
-    """Lowercase, remove punctuation, articles and extra whitespace."""
+    """Lowercase, remove punctuation, articles, extra whitespace, and special tokens."""
     def remove_articles(text):
         return re.sub(r'\b(a|an|the)\b', ' ', text)
 
@@ -15,10 +15,13 @@ def normalize_text(s: str) -> str:
     def remove_punc(text):
         return ''.join(ch for ch in text if ch not in set(string.punctuation))
 
+    def remove_special_tokens(text):
+        return re.sub(r'<\|.*?\|>', '', text)
+
     def lower(text):
         return text.lower()
 
-    return white_space_fix(remove_articles(remove_punc(lower(s))))
+    return white_space_fix(remove_articles(remove_punc(remove_special_tokens(lower(s)))))
 
 
 def exact_match(pred: str, gt: str) -> bool:
@@ -29,8 +32,10 @@ def exact_match(pred: str, gt: str) -> bool:
 def exist_match(pred: str, gt: str) -> bool:
     """Check if normalized ground truth is contained within normalized prediction."""
     pred_norm = normalize_text(pred)
-    gt_norm = normalize_text(gt)
-    return gt_norm in pred_norm
+    # gt_norm = normalize_text(gt)
+    gt_parts = [normalize_text(part.strip()) for part in gt.split(',')]
+    return all(part in pred_norm for part in gt_parts)
+    # return gt_norm in pred_norm
 
 
 def read_tsv(path: str) -> dict:

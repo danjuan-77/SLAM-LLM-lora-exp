@@ -9,8 +9,6 @@ from utils.codec_utils import audio_decode_cosyvoice
 import hydra
 from omegaconf import DictConfig, ListConfig, OmegaConf
 import whisper
-import threading
-from queue import Queue
 
 
 @hydra.main(config_name=None, version_base=None)
@@ -49,6 +47,14 @@ def extract_audio_feature(audio_path, mel_size):
 
 def get_input_ids(length, special_token_a, special_token_t, vocab_config, layer_shift=layershift):
 	input_ids = []
+	if vocab_config.code_layer == 0:
+		input_ids_item = []
+		input_ids_item.append(layershift(vocab_config.input_a, 0))
+		input_ids_item += [layershift(vocab_config.pad_a, 0)] * length
+		input_ids_item += [(layershift(vocab_config.eoa, 0)), layershift(special_token_a, 0)]
+		input_ids = torch.tensor(input_ids_item).unsqueeze(0).unsqueeze(0)
+		return input_ids
+
 	for i in range(vocab_config.code_layer):
 		input_ids_item = []
 		input_ids_item.append(layer_shift(vocab_config.input_a, i))
@@ -86,6 +92,7 @@ def generate_from_wav(wav_path, model, dataset_config, decode_config, logger, de
 	num_latency_tokens = dataset_config.num_latency_tokens
 	audio_embedding = None
 	transcribed_text = None
+	modeling_paradigm = dataset_config.modeling_paradigm
 
 	audio_mel, audio_length = extract_audio_feature(wav_path, mel_size)
 	audio_mel = audio_mel.unsqueeze(0).to(device)
@@ -140,8 +147,16 @@ def generate_from_wav(wav_path, model, dataset_config, decode_config, logger, de
 	}
 
 	model_outputs = model.generate(**batch, **decode_config)
-	text_outputs = model_outputs[code_layer]
-	audio_outputs = model_outputs[:code_layer]	
+
+	if modeling_paradigm == "parallel":
+		text_outputs = model_outputs[code_layer]
+		audio_outputs = model_outputs[:code_layer]
+	elif modeling_paradigm == "interleaved":
+		text_outputs = model_outputs['text']
+		audio_outputs = model_outputs['audio']
+	else:
+		raise NotImplementedError
+
 	output_text = model.tokenizer.decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
 
 	if transcribed_text is None:
@@ -152,11 +167,11 @@ def generate_from_wav(wav_path, model, dataset_config, decode_config, logger, de
 	if decode_config.decode_text_only or output_text_only:
 		return None, output_text, " ASSISTANT: " + output_text, transcribed_text
 
-	if audio_outputs[0].shape[0] == decode_config.max_new_tokens:
+	if modeling_paradigm == "interleaved" and (audio_outputs[0].shape[0] + text_outputs.shape[0]) == decode_config.max_new_tokens or modeling_paradigm == "parallel" and audio_outputs[0].shape[0] == decode_config.max_new_tokens:
 		logger.warning(f"Audio token is too long, skip. You can try to increase the max_new_tokens in the decode_config.")
 		return None, output_text, history + " ASSISTANT: " + output_text, transcribed_text
 	
-	audio_tokens = [audio_outputs[layer] for layer in range(code_layer)]
+	audio_tokens = [audio_outputs[layer] for layer in range(code_layer)] if code_layer > 0 else audio_outputs
 
 	codec_decoder = model.codec_decoder
 	if code_type == "SNAC":
@@ -185,6 +200,7 @@ def generate_from_text(text_input, model, dataset_config, decode_config, logger,
 	task_type = dataset_config.task_type
 	code_type = model_config.code_type
 	num_latency_tokens = dataset_config.num_latency_tokens
+	modeling_paradigm = dataset_config.modeling_paradigm
 
 	prompt = prompt_template.format(prompt, history)
 	# prompt = prompt_template.format(prompt)		# note: old version
@@ -232,18 +248,24 @@ def generate_from_text(text_input, model, dataset_config, decode_config, logger,
 	}
 
 	model_outputs = model.generate(**batch, **decode_config)
-	text_outputs = model_outputs[code_layer]
-	audio_outputs = model_outputs[:code_layer]	
+	if modeling_paradigm == "parallel":
+		text_outputs = model_outputs[code_layer]
+		audio_outputs = model_outputs[:code_layer]
+	elif modeling_paradigm == "interleaved":
+		text_outputs = model_outputs['text']
+		audio_outputs = model_outputs['audio']
+	else:
+		raise NotImplementedError
 	output_text = model.tokenizer.decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
 	
 	if decode_config.decode_text_only or output_text_only:
 		return None, output_text, history + "USER: " + text_input.strip() + " ASSISTANT: " + output_text.strip() + " "	
 
-	if audio_outputs[0].shape[0] == decode_config.max_new_tokens:
+	if modeling_paradigm == "interleaved" and (audio_outputs[0].shape[0] + text_outputs.shape[0]) == decode_config.max_new_tokens or modeling_paradigm == "parallel" and audio_outputs[0].shape[0] == decode_config.max_new_tokens:
 		logger.warning(f"Audio token is too long, skip. You can try to increase the max_new_tokens in the decode_config.")
 		return None, output_text, history + "USER: " + text_input.strip() + " ASSISTANT: " + output_text.strip() + " "
 	
-	audio_tokens = [audio_outputs[layer] for layer in range(code_layer)]
+	audio_tokens = [audio_outputs[layer] for layer in range(code_layer)] if code_layer > 0 else audio_outputs
 
 	codec_decoder = model.codec_decoder
 	if code_type == "SNAC":
@@ -407,6 +429,10 @@ def main(kwargs: DictConfig):
 				tone_dir, audio_prompt_path, output_text_only, history, layer_shift, system_prompt
 			)
 			logger.info(f"Generated Text: {output_text}")
+
+			if audio_hat is None:
+				logger.warning("Generated Audio is None. Please try again.")
+				continue
 
 			if tone_audio_dir is not None:
 				output_wav_path = os.path.join(conversation_dir, f"chat_{chat_count}.wav")

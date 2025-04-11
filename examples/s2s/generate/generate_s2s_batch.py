@@ -206,7 +206,7 @@ def main(kwargs: DictConfig):
 			if output_text_only or decode_config.decode_text_only:
 				continue
 				
-			if audio_outputs[0].shape[0] == decode_config.max_new_tokens:	# if the audio token is too long, skip (bad case)
+			if modeling_paradigm == "interleaved" and (audio_outputs[0].shape[0] + text_outputs.shape[0]) == decode_config.max_new_tokens or modeling_paradigm == "parallel" and audio_outputs[0].shape[0] == decode_config.max_new_tokens:	# if the audio token is too long, skip (bad case)
 				logger.warning(f"Audio token is too long, skip. You can try to increase the max_new_tokens in the decode_config.")
 				continue
 
