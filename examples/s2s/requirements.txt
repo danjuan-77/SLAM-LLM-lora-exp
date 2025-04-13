@@ -19,5 +19,5 @@ inflect==7.3.1
 matplotlib==3.7.5
 lightning==2.2.4
 torchaudio==2.3.0
-torchaudio==2.3.0
 wget==3.2
+num2words==0.5.14

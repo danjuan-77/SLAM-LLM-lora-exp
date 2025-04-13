@@ -1,6 +1,6 @@
 #!/bin/bash
 
-DECODE_DIR=/home/wenxi/mydisk/exp/standard_qa_eval/trivia_qa/qwen2.5-7b-instruct
+DECODE_DIR=/home/wenxi/mydisk/exp/standard_qa_eval/web_qa/qwen2.5-7b-instruct
 FORMAT=jsonl    # tsv jsonl
 
 PRED_FILE="$DECODE_DIR/pred_text"
@@ -17,6 +17,6 @@ python ./examples/s2s/evaluation/close_qa.py \
     --gt "$GT_FILE" \
     --exist \
     --format "$FORMAT" \
-    # --show-mixmatch
+    --show-mixmatch
 
 # bash ./examples/s2s/scripts/eval/close_qa.sh
