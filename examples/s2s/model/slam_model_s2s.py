@@ -322,7 +322,12 @@ class slam_model_s2s(slam_model):
                 elif self.train_config.modeling_paradigm == "interleaved":
                     preds_start_idx = (text_labels != -100).float().argmax(dim=1)
                     preds = torch.argmax(x_ori, -1)
-                    new_preds, new_labels = self.extract_interleaved_tokens(preds, text_labels, preds_start_idx)
+
+                    if self.train_config.task_type in ["s2s", "t2s", "tts"]:
+                        new_preds, new_labels = self.extract_interleaved_tokens(preds, text_labels, preds_start_idx)
+                    else:
+                        new_preds = preds
+                        new_labels = text_labels
                     
                     # padding token is not counted in text_acc
                     pad_token = self.model_config.vocab_config.pad_t
@@ -434,10 +439,10 @@ class slam_model_s2s(slam_model):
                 temperature=kwargs.get("temperature", 1.0),
                 attention_mask=attention_mask,
                 bos_token_id=self.tokenizer.bos_token_id,
-                eos_token_id=layershift(eoa, 0),
+                eos_token_id=layershift(eoa, 0) if self.train_config.task_type in ["s2s", "t2s", "tts"] else eot,
                 pad_token_id=self.tokenizer.pad_token_id
             )
-            model_outputs = self.process_interleaved_output(model_outputs)
+            model_outputs = self.process_interleaved_output(model_outputs) if self.train_config.task_type in ["s2s", "t2s", "tts"] else {"text": model_outputs.squeeze(0), "audio": None}
             return model_outputs
 
         # NOTE: currently, we only support greedy decoding and sampling for parallel generation, no beam search
@@ -810,6 +815,7 @@ class slam_model_s2s(slam_model):
         interleaved_audio_token_num = self.train_config.interleaved_audio_token_num
         interleaved_text_token_num = self.train_config.interleaved_text_token_num
         audio_shift = self.model_config.vocab_config.padded_text_vocabsize
+        eoa_shift = audio_shift + self.model_config.vocab_config.eoa
 
         audio_tokens, text_tokens = [], []
 
@@ -820,6 +826,13 @@ class slam_model_s2s(slam_model):
             idx = 0
             while idx < seq_len:
                 text_chunk = sequence[idx: idx + interleaved_text_token_num]
+
+                # Check if the text chunk miscontains the end of audio token
+                if eoa_shift in text_chunk:
+                    audio_chunk = text_chunk - audio_shift
+                    current_audio.append(audio_chunk)
+                    break
+
                 current_text.append(text_chunk)
                 idx += interleaved_text_token_num
 

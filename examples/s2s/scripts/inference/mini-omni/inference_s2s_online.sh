@@ -30,7 +30,6 @@ top_p=0.9
 top_k=50
 temperature=1.0
 decode_text_only=false
-input_text=false
 
 output_text_only=false
 
@@ -85,7 +84,6 @@ python $code_dir/inference_s2s.py \
         ++decode_config.top_k=$top_k \
         ++decode_config.temperature=$temperature \
         ++decode_config.decode_text_only=$decode_text_only \
-        ++decode_config.input_text=$input_text \
         ++log_config.online_output_dir=$online_output_dir \
         ++decode_log=$decode_log \
         ++ckpt_path=$ckpt_path/model.pt \

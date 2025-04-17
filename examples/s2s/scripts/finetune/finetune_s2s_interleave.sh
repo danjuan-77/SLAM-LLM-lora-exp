@@ -1,7 +1,7 @@
 #!/bin/bash
 export OMP_NUM_THREADS=1
-# export CUDA_VISIBLE_DEVICES=0
-export CUDA_VISIBLE_DEVICES=0,1,2,3
+export CUDA_VISIBLE_DEVICES=0
+# export CUDA_VISIBLE_DEVICES=0,1,2,3
 # export CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7
 export TOKENIZERS_PARALLELISM=false
 export LD_LIBRARY_PATH=/home/wenxi/miniconda3/envs/slam/lib:$LD_LIBRARY_PATH
@@ -28,7 +28,6 @@ total_vocabsize=$((total_audio_vocabsize + llm_vocabsize))
 
 # code settings
 code_type=CosyVoice                 # CosyVoice or SNAC
-num_latency_tokens=0                # number of delay tokens (in front of the generated audio tokens)
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
 # dataset settings
@@ -36,6 +35,7 @@ manifest_format=parquet             # parquet or jsonl
 train_data_path=/home/wenxi/mydisk/data/distll_clean/SLAM-Omni_distill_parquet
 val_data_path=/home/wenxi/mydisk/data/distll_clean/SLAM-Omni_distill_parquet
 load_from_cache_file=true           # set to true if you have already generated the cache file, otherwise set to false
+cache_dir=/home/wenxi/mydisk/data/VA-cache  # you could set the cache_dir if load_from_cache_file=true and the cache file is not in the default cache_dir
 
 # training settings
 modeling_paradigm=interleaved
@@ -62,7 +62,7 @@ split_size=0.01
 
 # exp_name="gpu${num_gpus}-btz${batch_size_training}-lr${lr}-interleave_text${interleaved_text_token_num}_audio${interleaved_audio_token_num}-Qwen2.5-1.5b-gradient_accumulation${gradient_accumulation_steps}"
 exp_name="gpu${num_gpus}-btz${batch_size_training}-lr${lr}-interleave_text${interleaved_text_token_num}_audio${interleaved_audio_token_num}-Qwen2.5-0.5b-distill-alpaca_emotion"
-# exp_name="debug"
+exp_name="debug"
 wandb_entity_name=1029713857
 wandb_project_name=SLAM-Omni-Interleaved
 
@@ -105,11 +105,11 @@ hydra.run.dir=$output_dir \
 ++dataset_config.vocab_config.code_layer=$code_layer \
 ++dataset_config.vocab_config.total_vocabsize=$total_vocabsize \
 ++dataset_config.code_type=$code_type \
-++dataset_config.num_latency_tokens=$num_latency_tokens \
 ++dataset_config.do_layershift=$do_layershift \
 ++dataset_config.modeling_paradigm=$modeling_paradigm \
 ++dataset_config.interleaved_text_token_num=$interleaved_text_token_num \
 ++dataset_config.interleaved_audio_token_num=$interleaved_audio_token_num \
+++dataset_config.cache_dir=$cache_dir \
 ++train_config.model_name=s2s \
 ++train_config.num_epochs=$num_epochs \
 ++train_config.freeze_encoder=true \

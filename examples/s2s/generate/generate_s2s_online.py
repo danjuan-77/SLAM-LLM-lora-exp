@@ -147,8 +147,12 @@ def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_con
 	if decode_config.decode_text_only or output_text_only:
 		return None, output_text
 
-	if audio_outputs[0].shape[0] == decode_config.max_new_tokens:
+	if modeling_paradigm == "interleaved" and (audio_outputs[0].shape[0] + text_outputs.shape[0]) == decode_config.max_new_tokens or modeling_paradigm == "parallel" and audio_outputs[0].shape[0] == decode_config.max_new_tokens:
 		logger.warning(f"Audio token is too long, skip. You can try to increase the max_new_tokens in the decode_config.")
+		return None, output_text
+
+	if audio_outputs[0].shape[0] == 0:
+		logger.warning(f"Audio token is empty, skip.")
 		return None, output_text
 	
 	audio_tokens = [audio_outputs[layer] for layer in range(code_layer)] if code_layer > 0 else audio_outputs
@@ -178,6 +182,7 @@ def generate_from_text(text_input, model, codec_decoder, dataset_config, decode_
 	task_type = dataset_config.task_type
 	code_type = model_config.code_type
 	num_latency_tokens = dataset_config.num_latency_tokens
+	modeling_paradigm = dataset_config.modeling_paradigm
 
 	prompt = prompt_template.format(prompt)
 	prompt_ids = model.tokenizer.encode(prompt)
@@ -220,18 +225,25 @@ def generate_from_text(text_input, model, codec_decoder, dataset_config, decode_
 		return model.stream_generate(**batch, **decode_config)
 
 	model_outputs = model.generate(**batch, **decode_config)
-	text_outputs = model_outputs[code_layer]
-	audio_outputs = model_outputs[:code_layer]	
+	if modeling_paradigm == "parallel":
+		text_outputs = model_outputs[code_layer]
+		audio_outputs = model_outputs[:code_layer]
+	elif modeling_paradigm == "interleaved":
+		text_outputs = model_outputs['text']
+		audio_outputs = model_outputs['audio']
+	else:
+		raise NotImplementedError
+	
 	output_text = model.tokenizer.decode(text_outputs, add_special_tokens=False, skip_special_tokens=True)
 	
 	if decode_config.decode_text_only or output_text_only:
 		return None, output_text
 
-	if audio_outputs[0].shape[0] == decode_config.max_new_tokens:
+	if modeling_paradigm == "interleaved" and (audio_outputs[0].shape[0] + text_outputs.shape[0]) == decode_config.max_new_tokens or modeling_paradigm == "parallel" and audio_outputs[0].shape[0] == decode_config.max_new_tokens:
 		logger.warning(f"Audio token is too long, skip. You can try to increase the max_new_tokens in the decode_config.")
 		return None, output_text
 	
-	audio_tokens = [audio_outputs[layer] for layer in range(code_layer)]
+	audio_tokens = [audio_outputs[layer] for layer in range(code_layer)] if code_layer > 0 else audio_outputs
 
 	if code_type == "SNAC":
 		audiolist = reconscruct_snac(audio_tokens)
@@ -341,10 +353,6 @@ def main(kwargs: DictConfig):
 	else:
 		logger.info("Decode Strategy: Greedy")
 
-	if decode_config.input_text:
-		logger.info("Input Text")
-	else:
-		logger.info("Input Audio")
 
 	if decode_config.decode_text_only:
 		logger.info("Decode Text Only")
@@ -359,16 +367,27 @@ def main(kwargs: DictConfig):
 		logger.info("Interleaved Text Token Num: {}".format(interleaved_text_token_num))
 		logger.info("Interleaved Audio Token Num: {}".format(interleaved_audio_token_num))
 
-	if not inference_streaming:
-		if decode_config.input_text:
-			logger.info("============== Ready for t2s Online Inference (Non-Streaming) ==============")
-			while True:
-				text_input = input("Please provide the text input (or type 'q' to quit): ")
-				if text_input.lower() == 'q':
-					break
+	mode = "audio"
 
+	if not inference_streaming:
+		while True:
+			if mode == "text":
+				user_input = input("Please provide the text input (or type 'q' to quit, 'a' to switch to audio mode): ")
+				cmd = user_input.strip().lower()
+				if cmd == 'q':
+					break
+				elif cmd == 'a':
+					mode = "audio"
+					continue
+				
+				text_input = user_input
 				audio_hat, output_text = generate_from_text(text_input, model, codec_decoder, dataset_config, decode_config, logger, device, model_config, tone_dir, audio_prompt_path, output_text_only, layer_shift, inference_streaming)
 				logger.info(f"Generated Text: {output_text}")
+
+				if audio_hat is None:
+					if not output_text_only or not decode_config.decode_text_only:
+						logger.warning(f"Generated Audio is None. Please try again.")
+					continue
 
 				if tone_audio_dir is not None:
 					os.makedirs(tone_audio_dir, exist_ok=True)
@@ -377,13 +396,17 @@ def main(kwargs: DictConfig):
 					output_wav_path = f"generated_{text_input.replace(' ', '_')}.wav"
 				sf.write(output_wav_path, audio_hat.squeeze().cpu().numpy(), speech_sample_rate)
 				logger.info(f"Generated Audio saved at: {output_wav_path}")
-		else:
-			logger.info("============== Ready for s2s Online Inference (Non-Streaming) ==============")
-			while True:
-				wav_path = input("Please provide the path to a WAV file (or type 'q' to quit): ")
-				if wav_path.lower() == 'q':
+			
+			elif mode == "audio":
+				wav_input = input("Please provide the path to a WAV file (or type 'q' to quit, 't' to switch to text mode): ")
+				cmd = wav_input.strip().lower()
+				if cmd == 'q':
 					break
+				elif cmd == 't':
+					mode = "text"
+					continue
 
+				wav_path = wav_input
 				if not os.path.exists(wav_path):
 					logger.warning(f"File {wav_path} does not exist. Please try again.")
 					continue

@@ -7,6 +7,7 @@ import torch
 import whisper
 from utils.snac_utils import layershift, get_snac_answer_token, simple_shift
 from utils.codec_utils import get_single_layer_answer_token, get_group_answer_token
+from utils.dataset_utils import get_first_existing_value
 import librosa
 
 
@@ -95,14 +96,19 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         if self.manifest_format == "parquet":
             from datasets import load_dataset, load_from_disk
             if dataset_config.load_from_cache_file:       
-                ds = load_dataset(dataset_config.train_data_path)
+                ds = load_dataset(dataset_config.train_data_path, cache_dir=dataset_config.cache_dir)
             else:
                 ds = load_from_disk(dataset_config.train_data_path)   # load_from local disk
-            train_val_split = ds['train'].train_test_split(test_size=self.split_size, seed=self.seed)
-            if split == "train":
-                self.data_list = train_val_split['train']
-            else:
-                self.data_list = train_val_split['test']
+
+            if split == "train" or (split in ["val", "test"] and split not in ds):
+                train_val_split = ds['train'].train_test_split(test_size=self.split_size, seed=self.seed)
+                if split == "train":
+                    self.data_list = train_val_split['train']
+                else:
+                    self.data_list = train_val_split['test']
+            elif split == "test":
+                self.data_list = ds['test']
+
         elif self.manifest_format == "jsonl":
             if split == "train":
                 with open(dataset_config.train_data_path, encoding='utf-8') as fin:
@@ -291,13 +297,13 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         target_audio_length = 0
 
         if self.manifest_format == "parquet":
-            source_audio = data_dict.get("question_audio", None)
+            source_audio = get_first_existing_value(data_dict, ["question_audio", "question_wav", "source_wav", "audio"])
             if self.code_type == "SNAC":
                 target_audio = data_dict.get("answer_snac", None)
             elif self.code_type == "CosyVoice":
                 target_audio = data_dict.get("answer_cosyvoice_speech_token", None)
-            source_text = data_dict.get("question", None)
-            target_text = data_dict.get("answer", None)
+            source_text = get_first_existing_value(data_dict, ["question", "question_text", "Questions"])
+            target_text = get_first_existing_value(data_dict, ["answer", "answer_text", "Answer", "answers", "Answers"])
             if source_audio is not None and type(source_audio) == dict:
                 key = source_audio.get("path", None)
         elif self.manifest_format == "jsonl":
@@ -312,8 +318,10 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         if task_type in ["s2s", "asr", "s2t"]:
             audio_mel, audio_length = self.extract_audio_feature(source_audio)
         
-        if task_type in ["s2s", "t2s", "tts"]:
+        if task_type in ["s2s", "t2s", "tts"] and target_audio is not None:
             target_audio, target_audio_length = self.extract_audio_feature(target_audio)
+        elif task_type in ["asr", "s2t"]:
+            target_audio, target_audio_length = None, 0
 
         if self.fix_length_audio > 0:
             audio_length = self.fix_length_audio
@@ -427,18 +435,21 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
                 labels_ids[:self.code_layer,-audio_padding_length:] = -1  # [-1,-1,answer_text,eos,-1]
 
         elif self.modeling_paradigm == "interleaved":
-            target_audio = target_audio.squeeze(0)
             example_ids = example_ids[0]
-            answer_text_ids, target_audio = self.pad_interleaved_chunks(answer_text_ids, target_audio)
-            target_audio_labels = self.layershift(target_audio, 0)
-            interleaved_sequence = self.interleave_chunks(answer_text_ids, target_audio_labels)
+            if target_audio is not None:
+                target_audio = target_audio.squeeze(0)
+                answer_text_ids, target_audio = self.pad_interleaved_chunks(answer_text_ids, target_audio)
+                target_audio_labels = self.layershift(target_audio, 0)
+                interleaved_sequence = self.interleave_chunks(answer_text_ids, target_audio_labels)
+                interleaved_sequence = torch.tensor(interleaved_sequence)
+            else: 
+                interleaved_sequence = answer_text_ids
 
-            example_ids = torch.cat((example_ids, torch.tensor(interleaved_sequence).unsqueeze(0)), dim=1)
+            example_ids = torch.cat((example_ids, interleaved_sequence.unsqueeze(0)), dim=1)
             labels_ids = example_ids.clone()
             labels_ids[:,:input_length + prompt_length + 3] = -1  # [-1,-1,answer,eos]; NOTE: here 3 include <bos> <eos> <ans_t>
 
             # NOTE: here padding token loss is calculated 
-
         
         example_mask = example_ids[0].ge(-1)  # [True,True,True,True]
 
@@ -549,14 +560,14 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
         audio_mel = None
         audio_mel_post_mask = None
 
-        if self.input_type == "raw" and self.task_type in ["s2s", "asr"]:
+        if self.input_type == "raw" and self.task_type in ["s2s", "asr", "s2t"]:
             audio_raw_max_length = max([s['audio'].shape[0] for s in samples])
             audio_raw = torch.stack([self.pad(s['audio'], audio_raw_max_length, 0)
                                      for s in samples])
             audio_mask = torch.zeros(len(samples), audio_raw_max_length)
             for line, sample in enumerate(samples):
                 audio_mask[line, :sample['audio'].shape[0]] = 1
-        elif self.input_type == "mel" and self.task_type in ["s2s", "asr"]:
+        elif self.input_type == "mel" and self.task_type in ["s2s", "asr", "s2t"]:
             audio_mel_max_length = max([s['audio_mel'].shape[0] for s in samples])
             audio_mel = torch.stack([self.pad(s['audio_mel'], audio_mel_max_length, 0)
                                   for s in samples])

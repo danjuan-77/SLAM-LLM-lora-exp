@@ -1,0 +1,26 @@
+{
+    "llama_qa": {
+        "hf_hub_url": "TwinkStart/llama-questions",
+        "split": "test",
+        "columns": {
+          "prompt": "Questions",
+          "response": "Answer"
+        }
+      },
+      "trivia_qa": {
+        "hf_hub_url": "TwinkStart/speech-triavia-qa",
+        "split": "test",
+        "columns": {
+          "prompt": "question",
+          "response": "answer"
+        }
+      },
+      "web_qa": {
+        "hf_hub_url": "TwinkStart/speech-web-questions",
+        "split": "test",
+        "columns": {
+          "prompt": "question",
+          "response": "answers"
+        }
+      }
+}

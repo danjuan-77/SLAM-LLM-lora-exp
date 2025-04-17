@@ -1,5 +1,5 @@
 #!/bin/bash
-export CUDA_VISIBLE_DEVICES=0
+export CUDA_VISIBLE_DEVICES=3
 export TOKENIZERS_PARALLELISM=false
 export OMP_NUM_THREADS=1
 export LD_LIBRARY_PATH=/home/v-wenxichen/anaconda3/envs/slam/lib:$LD_LIBRARY_PATH
@@ -11,15 +11,14 @@ code_dir=examples/s2s
 
 whisper_size=small                  # tiny base small medium large-v3
 speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # replace this with your own whisper model path (different whisper size)
-llm_path="/valleblob/v-wenxichen/models/models--Qwen--Qwen2-0.5B/snapshots/ff3a49fac17555b8dfc4db6709f480cc8f16a9fe"
+llm_path="/valleblob/v-wenxichen/models/qwen/qwen2.5-3b-instruct"
 codec_decoder_path="/valleblob/v-wenxichen/models/CosyVoice/CosyVoice-300M-SFT" # replace this with your own CosyVoice model path
 
 encoder_dim=768                     # 384 512 768 896 1024 1280 
 mel_size=80                         # 80 128 (128 for whisper-large only, 80 for others)
-llm_dim=896                         # 896 1536 2048 3584  -> 0.5B 1.5B 3B 7B
+llm_dim=2048                         # 896 1536 2048 3584  -> 0.5B 1.5B 3B 7B
 
 task_type=s2s
-split_size=0.002
 
 # vocabulary settings
 code_layer=0                        # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 
@@ -33,7 +32,18 @@ codec_decoder_type=CosyVoice
 num_latency_tokens=0                # number of latency tokens (same as the number in training)
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
-ckpt_path=/home/wenxi/mydisk/exp/SLAM-Omni/gpu2-btz3-lr1e-4-interleave_text12_audio36/s2s_epoch_1_step_60000
+# ckpt_path=/valleblob/v-wenxichen/exp/s2s-interleave/gpu4-btz1-lr1e-4-interleave_text12_audio36-Qwen2.5-3b-gradient_accumulation2-lora-audio_embed_only-lora_rank384-alpha768/gpu4-btz1-lr1e-4-interleave_text12_audio36-Qwen2.5-3b-gradient_accumulation2-lora-audio_embed_only-lora_rank384-alpha768-s2s_epoch_3_step_68390
+
+# ckpt_path=/valleblob/v-wenxichen/exp/s2s-interleave/gpu4-btz1-lr1e-4-interleave_text12_audio36-Qwen2.5-3b-gradient_accumulation2-lora-audio_embed_only-lora_rank512-alpha1024/gpu4-btz1-lr1e-4-interleave_text12_audio36-Qwen2.5-3b-gradient_accumulation2-lora-audio_embed_only-lora_rank512-alpha1024-s2s_epoch_3_step_68390
+
+# ckpt_path=/valleblob/v-wenxichen/exp/s2s-interleave/gpu4-btz1-lr1e-4-interleave_text12_audio36-Qwen2.5-3b-instruct-gradient_accumulation2-lora-audio_embed_only-lora_rank384-alpha768/s2s_epoch_3_step_68390
+
+ckpt_path=/valleblob/v-wenxichen/exp/s2s-interleave/gpu4-btz1-lr1e-4-interleave_text12_audio36-Qwen2.5-3b-instruct-gradient_accumulation2-lora-audio_embed_only-lora_rank1024-alpha2048/s2s_epoch_3_step_68390
+
+# PEFT settings
+use_peft=true
+lora_r=1024
+lora_alpha=$((lora_r * 2))
 
 # jsonl dataset
 # manifest_format=jsonl
@@ -41,9 +51,10 @@ ckpt_path=/home/wenxi/mydisk/exp/SLAM-Omni/gpu2-btz3-lr1e-4-interleave_text12_au
 
 # huggingface dataset
 manifest_format=parquet
-val_data_path="/valleblob/v-wenxichen/data/s2s/VoiceAssistant-400K-v1/test"
-load_from_cache_file=false
-dataset_sample_seed=777
+val_data_path=TwinkStart/llama-questions        # llama-questions speech-triavia-qa speech-web-questions
+load_from_cache_file=true
+DATASET_NAME=llama_qa # llama_qa trivia_qa web_qa
+cache_dir=/home/wenxi/mydisk/data/standard_qa_eval/$DATASET_NAME
 
 # decode config
 modeling_paradigm=interleaved
@@ -64,18 +75,10 @@ inference_online=false
 # audio_prompt_path=./examples/s2s/audio_prompt/zh/prompt_6.wav      # replace this with your own audio prompt path or our provided audio prompt path
 audio_prompt_path=./examples/s2s/audio_prompt/en/prompt_6.wav      # replace this with your own audio prompt path or our provided audio prompt path
 
-# decode_log=$ckpt_path/s2s_decode_${split}_trp${text_repetition_penalty}_arp${audio_repetition_penalty}_seed${dataset_sample_seed}_greedy
-# if [ "$do_sample" = true ] ; then
-#     decode_log=$ckpt_path/s2s_decode_${split}_trp${text_repetition_penalty}_arp${audio_repetition_penalty}_seed${dataset_sample_seed}_sampling_topk${top_k}_topp${top_p}_temp${temperature}
-# fi
+decode_log=/home/wenxi/mydisk/exp/standard_qa_eval/${DATASET_NAME}/gpu4-btz1-lr1e-4-interleave_text12_audio36-Qwen2.5-3b-instruct-gradient_accumulation2-lora-audio_embed_only-lora_rank$lora_r-alpha$lora_alpha
 
-# if [ "$decode_text_only" = true ] ; then
-#     decode_log=$decode_log"_text_only"
-# fi
-decode_log=/home/wenxi/mydisk/exp/conversation/gpu2-btz3-lr1e-4-interleave_text12_audio36-batch-test
-
-# python $code_dir/inference_s2s.py \
-python -m debugpy --listen 5678 --wait-for-client $code_dir/inference_s2s.py \
+# -m debugpy --listen 5678 --wait-for-client
+python $code_dir/inference_s2s.py \
         --config-path "conf" \
         --config-name "prompt.yaml" \
         hydra.run.dir=$ckpt_path \
@@ -100,10 +103,8 @@ python -m debugpy --listen 5678 --wait-for-client $code_dir/inference_s2s.py \
         ++dataset_config.mel_size=$mel_size \
         ++dataset_config.inference_mode=true \
         ++dataset_config.manifest_format=$manifest_format \
-        ++dataset_config.split_size=$split_size \
         ++dataset_config.load_from_cache_file=$load_from_cache_file \
         ++dataset_config.task_type=$task_type \
-        ++dataset_config.seed=$dataset_sample_seed \
         ++dataset_config.vocab_config.code_layer=$code_layer \
         ++dataset_config.vocab_config.total_vocabsize=$total_vocabsize \
         ++dataset_config.code_type=$code_type \
@@ -112,6 +113,7 @@ python -m debugpy --listen 5678 --wait-for-client $code_dir/inference_s2s.py \
         ++dataset_config.modeling_paradigm=$modeling_paradigm \
         ++dataset_config.interleaved_text_token_num=$interleaved_text_token_num \
         ++dataset_config.interleaved_audio_token_num=$interleaved_audio_token_num \
+        ++dataset_config.cache_dir=$cache_dir \
         ++train_config.model_name=s2s \
         ++train_config.freeze_encoder=true \
         ++train_config.freeze_llm=true \
@@ -123,6 +125,9 @@ python -m debugpy --listen 5678 --wait-for-client $code_dir/inference_s2s.py \
         ++train_config.modeling_paradigm=$modeling_paradigm \
         ++train_config.interleaved_text_token_num=$interleaved_text_token_num \
         ++train_config.interleaved_audio_token_num=$interleaved_audio_token_num \
+        ++train_config.use_peft=$use_peft \
+        ++train_config.peft_config.lora_alpha=$lora_alpha \
+        ++train_config.peft_config.r=$lora_r \
         ++decode_config.text_repetition_penalty=$text_repetition_penalty \
         ++decode_config.audio_repetition_penalty=$audio_repetition_penalty \
         ++decode_config.max_new_tokens=$max_new_tokens \

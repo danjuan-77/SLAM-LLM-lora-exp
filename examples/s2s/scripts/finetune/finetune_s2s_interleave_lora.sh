@@ -46,24 +46,19 @@ freeze_llm=true
 num_epochs=10
 lr=1e-4
 task_type=s2s
-warmup_steps=1000
-total_steps=100000
+warmup_steps=1500
+total_steps=150000
 gradient_accumulation_steps=2
 train_audio_embed_only=true
 
 # PEFT settings
 use_peft=true
-lora_r=128
+lora_r=384
 lora_alpha=$((lora_r * 2))
 
 # validation settings
 validation_interval=3000
 split_size=0.01
-
-# exp_name="${llm_name}-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-nofp16-epochs${num_epochs}-whisper_${whisper_size}-group${code_layer}"
-# if [ "$use_fp16" = true ]; then
-#     exp_name="${llm_name}-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-fp16-epochs${num_epochs}-whisper_${whisper_size}-group${code_layer}"
-# fi
 
 exp_name="gpu${num_gpus}-btz${batch_size_training}-lr${lr}-interleave_text${interleaved_text_token_num}_audio${interleaved_audio_token_num}-Qwen2.5-3b-gradient_accumulation${gradient_accumulation_steps}-lora-audio_embed_only-lora_rank${lora_r}-alpha${lora_alpha}"
 # exp_name="debug"
