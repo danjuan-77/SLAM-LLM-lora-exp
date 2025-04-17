@@ -815,6 +815,7 @@ class slam_model_s2s(slam_model):
         interleaved_audio_token_num = self.train_config.interleaved_audio_token_num
         interleaved_text_token_num = self.train_config.interleaved_text_token_num
         audio_shift = self.model_config.vocab_config.padded_text_vocabsize
+        eoa_shift = audio_shift + self.model_config.vocab_config.eoa
 
         audio_tokens, text_tokens = [], []
 
@@ -825,6 +826,13 @@ class slam_model_s2s(slam_model):
             idx = 0
             while idx < seq_len:
                 text_chunk = sequence[idx: idx + interleaved_text_token_num]
+
+                # Check if the text chunk miscontains the end of audio token
+                if eoa_shift in text_chunk:
+                    audio_chunk = text_chunk - audio_shift
+                    current_audio.append(audio_chunk)
+                    break
+
                 current_text.append(text_chunk)
                 idx += interleaved_text_token_num
 

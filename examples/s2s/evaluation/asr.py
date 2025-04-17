@@ -52,10 +52,10 @@ def transcribe_audio_files(asr_pipe, input_directory: str, output_file: str):
     """
     audio_files = os.listdir(input_directory)
     num_audio = len(audio_files)
+    logging.info(f"Number of audio files to process: {num_audio}")
 
     with open(output_file, mode="w", encoding="utf-8") as f:
-        for index in tqdm(range(num_audio), desc="Transcribing audio files"):
-            file_name = f"{index}.wav"
+        for file_name in tqdm(audio_files, desc="Transcribing audio files"):
             audio_path = os.path.join(input_directory, file_name)
             if os.path.exists(audio_path):
                 result = asr_pipe([audio_path], batch_size=1)

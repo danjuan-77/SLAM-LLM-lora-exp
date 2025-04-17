@@ -150,6 +150,10 @@ def generate_from_wav(wav_path, model, codec_decoder, dataset_config, decode_con
 	if modeling_paradigm == "interleaved" and (audio_outputs[0].shape[0] + text_outputs.shape[0]) == decode_config.max_new_tokens or modeling_paradigm == "parallel" and audio_outputs[0].shape[0] == decode_config.max_new_tokens:
 		logger.warning(f"Audio token is too long, skip. You can try to increase the max_new_tokens in the decode_config.")
 		return None, output_text
+
+	if audio_outputs[0].shape[0] == 0:
+		logger.warning(f"Audio token is empty, skip.")
+		return None, output_text
 	
 	audio_tokens = [audio_outputs[layer] for layer in range(code_layer)] if code_layer > 0 else audio_outputs
 

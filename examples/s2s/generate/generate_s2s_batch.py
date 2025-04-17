@@ -210,6 +210,10 @@ def main(kwargs: DictConfig):
 				logger.warning(f"Audio token is too long, skip. You can try to increase the max_new_tokens in the decode_config.")
 				continue
 
+			if audio_outputs[0].shape[0] == 0:
+				logger.warning(f"Audio token is empty, skip.")
+				continue
+
 			for i, key in enumerate(batch["keys"]):
 				audio_tokens = [audio_outputs[layer] for layer in range(code_layer)] if code_layer > 0 else audio_outputs
 
