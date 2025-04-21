@@ -47,7 +47,7 @@ lr=1e-4
 task_type=s2s
 warmup_steps=1500
 total_steps=150000
-gradient_accumulation_steps=2
+gradient_accumulation_steps=1
 train_audio_embed_only=true
 
 # PEFT settings
