@@ -12,8 +12,8 @@ num_gpus=$(( num_gpus_per_node * num_nodes ))
 
 whisper_size=small                  # tiny base small medium large-v3
 speech_encoder_path="/share/nlp/tuwenming/models/openai/whisper/${whisper_size}.pt"   # different whisper size
-llm_path="/share/nlp/tuwenming/models/Qwen/Qwen2.5-3b/"  # Qwen/Qwen2-0.5B, you can choose other Qwen models (Qwen2 or Qwen2.5)
-llm_name=Qwen2.5-3b
+llm_path="/share/nlp/tuwenming/models/Qwen/Qwen2.5-3B/"  # Qwen/Qwen2-0.5B, you can choose other Qwen models (Qwen2 or Qwen2.5)
+llm_name=Qwen2.5-3B
 
 encoder_dim=768                     # 384 512 768 1024 1280
 mel_size=80                         # 80 128 ( only whisper-large-v3 supports 128 )
