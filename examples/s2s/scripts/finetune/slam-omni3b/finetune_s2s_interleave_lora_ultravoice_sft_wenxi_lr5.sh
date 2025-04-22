@@ -30,9 +30,10 @@ code_type=CosyVoice                 # CosyVoice or SNAC
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
 # dataset settings
+dataset_name=wenxi
 manifest_format=parquet             # parquet or jsonl
-train_data_path=/share/nlp/tuwenming/datasets/SLAM-Omni_distill_parquet/wenxi # train data & validation data
-val_data_path=/share/nlp/tuwenming/datasets/SLAM-Omni_distill_parquet/wenxi
+train_data_path="/share/nlp/tuwenming/datasets/SLAM-Omni_distill_parquet/${dataset_name}" # train data & validation data
+val_data_path="/share/nlp/tuwenming/datasets/SLAM-Omni_distill_parquet/${dataset_name}"
 load_from_cache_file=true           # set to true if you have already generated the cache file, otherwise set to false
 
 # training settings
@@ -59,7 +60,7 @@ lora_alpha=$((lora_r * 2))
 validation_interval=1000
 split_size=0.01
 
-exp_name="gpu${num_gpus}-btz${batch_size_training}-lr${lr}-warmup_steps${warmup_steps}-interleave_text${interleaved_text_token_num}_audio${interleaved_audio_token_num}-Qwen2.5-3b-gradient_accumulation${gradient_accumulation_steps}-lora-audio_embed_only-lora_rank${lora_r}-alpha${lora_alpha}"
+exp_name="gpu${num_gpus}-btz${batch_size_training}-lr${lr}-warmup_steps${warmup_steps}-interleave_text${interleaved_text_token_num}_audio${interleaved_audio_token_num}-Qwen2.5-3b-gradient_accumulation${gradient_accumulation_steps}-lora-audio_embed_only-lora_rank${lora_r}-alpha${lora_alpha}-dataset-${dataset_name}"
 # exp_name="debug"
 wandb_entity_name=kevin-tutu
 wandb_project_name=slam-omni-3b-lora-finetune
