@@ -63,8 +63,8 @@ split_size=0.01
 exp_name="gpu${num_gpus}-btz${batch_size_training}-lr${lr}-warmup_steps${warmup_steps}-interleave_text${interleaved_text_token_num}_audio${interleaved_audio_token_num}-Qwen2.5-3b-gradient_accumulation${gradient_accumulation_steps}-lora-audio_embed_only-lora_rank${lora_r}-alpha${lora_alpha}-dataset-${dataset_name}"
 # exp_name="debug"
 wandb_entity_name=kevin-tutu
-# wandb_project_name=slam-omni-3b-lora-finetune
-wandb_project_name=test
+wandb_project_name=slam-omni-3b-lora-finetune
+# wandb_project_name=test
 
 
 home_dir=/mnt/buffer/tuwenming/checkpoints/slam-omni-3b
