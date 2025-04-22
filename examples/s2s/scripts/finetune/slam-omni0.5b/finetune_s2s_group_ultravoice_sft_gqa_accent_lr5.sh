@@ -169,4 +169,4 @@ fi
 # --node_rank=$node_rank \
 # --master_addr=$master_addr \
 
-# examples/s2s/scripts/finetune/slam-omni0.5b/finetune_s2s_group_ultravoice_sft_gqa_accent_lr5.sh
+# bash examples/s2s/scripts/finetune/slam-omni0.5b/finetune_s2s_group_ultravoice_sft_gqa_accent_lr5.sh
