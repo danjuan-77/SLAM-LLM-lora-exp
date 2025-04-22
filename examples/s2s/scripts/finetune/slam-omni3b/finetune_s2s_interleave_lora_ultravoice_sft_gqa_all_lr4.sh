@@ -31,8 +31,8 @@ do_layershift=false                 # if false, tokens in each layers use the sa
 
 # dataset settings
 manifest_format=parquet             # parquet or jsonl
-train_data_path=/share/nlp/tuwenming/datasets/ultravoice160k/gqa_desc # train data & validation data
-val_data_path=/share/nlp/tuwenming/datasets/ultravoice160k/gqa_desc
+train_data_path=/share/nlp/tuwenming/datasets/ultravoice160k/gqa_all # train data & validation data
+val_data_path=/share/nlp/tuwenming/datasets/ultravoice160k/gqa_all
 load_from_cache_file=true           # set to true if you have already generated the cache file, otherwise set to false
 
 # training settings
@@ -43,7 +43,7 @@ batch_size_training=1
 use_fp16=true
 freeze_llm=true
 num_epochs=10
-lr=1e-5
+lr=1e-4
 task_type=s2s
 warmup_steps=5000
 total_steps=50000
@@ -174,4 +174,4 @@ fi
 # --node_rank=$node_rank \
 # --master_addr=$master_addr \
 
-# bash examples/s2s/scripts/finetune/finetune_s2s_interleave_lora_ultravoice_sft_gqa_desc_lr5.sh
+# bash examples/s2s/scripts/finetune/slam-omni3b/finetune_s2s_interleave_lora_ultravoice_sft_gqa_all_lr4.sh

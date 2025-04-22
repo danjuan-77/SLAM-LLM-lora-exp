@@ -31,8 +31,8 @@ do_layershift=false                 # if false, tokens in each layers use the sa
 
 # dataset settings
 manifest_format=parquet             # parquet or jsonl
-train_data_path=/share/nlp/tuwenming/datasets/ultravoice160k/gqa_all # train data & validation data
-val_data_path=/share/nlp/tuwenming/datasets/ultravoice160k/gqa_all
+train_data_path=/share/nlp/tuwenming/datasets/ultravoice160k/gqa_speed # train data & validation data
+val_data_path=/share/nlp/tuwenming/datasets/ultravoice160k/gqa_speed
 load_from_cache_file=true           # set to true if you have already generated the cache file, otherwise set to false
 
 # training settings
@@ -174,4 +174,4 @@ fi
 # --node_rank=$node_rank \
 # --master_addr=$master_addr \
 
-# bash examples/s2s/scripts/finetune/finetune_s2s_interleave_lora_ultravoice_sft_gqa_all_lr4.sh
+# bash examples/s2s/scripts/finetune/slam-omni3b/finetune_s2s_interleave_lora_ultravoice_sft_gqa_speed_lr4.sh

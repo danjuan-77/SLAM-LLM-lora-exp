@@ -174,4 +174,4 @@ fi
 # --node_rank=$node_rank \
 # --master_addr=$master_addr \
 
-# bash examples/s2s/scripts/finetune/finetune_s2s_interleave_lora_ultravoice_sft_gqa_all_lr5.sh
+# bash examples/s2s/scripts/finetune/slam-omni3b/finetune_s2s_interleave_lora_ultravoice_sft_gqa_all_lr5.sh

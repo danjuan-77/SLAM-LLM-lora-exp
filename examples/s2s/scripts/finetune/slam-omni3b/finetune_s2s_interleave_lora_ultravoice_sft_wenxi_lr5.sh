@@ -31,8 +31,8 @@ do_layershift=false                 # if false, tokens in each layers use the sa
 
 # dataset settings
 manifest_format=parquet             # parquet or jsonl
-train_data_path=/share/nlp/tuwenming/datasets/ultravoice160k/gqa_language # train data & validation data
-val_data_path=/share/nlp/tuwenming/datasets/ultravoice160k/gqa_language
+train_data_path=/share/nlp/tuwenming/datasets/SLAM-Omni_distill_parquet/wenxi # train data & validation data
+val_data_path=/share/nlp/tuwenming/datasets/SLAM-Omni_distill_parquet/wenxi
 load_from_cache_file=true           # set to true if you have already generated the cache file, otherwise set to false
 
 # training settings
@@ -62,9 +62,7 @@ split_size=0.01
 exp_name="gpu${num_gpus}-btz${batch_size_training}-lr${lr}-warmup_steps${warmup_steps}-interleave_text${interleaved_text_token_num}_audio${interleaved_audio_token_num}-Qwen2.5-3b-gradient_accumulation${gradient_accumulation_steps}-lora-audio_embed_only-lora_rank${lora_r}-alpha${lora_alpha}"
 # exp_name="debug"
 wandb_entity_name=kevin-tutu
-# wandb_project_name=slam-omni-3b-lora-finetune
-wandb_project_name=test
-
+wandb_project_name=slam-omni-3b-lora-finetune
 
 home_dir=/mnt/buffer/tuwenming/checkpoints/slam-omni-3b
 output_dir=$home_dir/$exp_name
@@ -174,4 +172,4 @@ fi
 # --node_rank=$node_rank \
 # --master_addr=$master_addr \
 
-# bash examples/s2s/scripts/finetune/finetune_s2s_interleave_lora_ultravoice_sft_gqa_lang_lr5.sh
+# bash examples/s2s/scripts/finetune/slam-omni3b/finetune_s2s_interleave_lora_ultravoice_sft_wenxi_lr5.sh

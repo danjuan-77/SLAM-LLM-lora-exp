@@ -43,7 +43,7 @@ batch_size_training=1
 use_fp16=true
 freeze_llm=true
 num_epochs=10
-lr=1e-5
+lr=1e-4
 task_type=s2s
 warmup_steps=5000
 total_steps=50000
@@ -174,4 +174,4 @@ fi
 # --node_rank=$node_rank \
 # --master_addr=$master_addr \
 
-# bash examples/s2s/scripts/finetune/finetune_s2s_interleave_lora_ultravoice_sft_gqa_volume_lr5.sh
+# bash examples/s2s/scripts/finetune/slam-omni3b/finetune_s2s_interleave_lora_ultravoice_sft_gqa_volume_lr4.sh
