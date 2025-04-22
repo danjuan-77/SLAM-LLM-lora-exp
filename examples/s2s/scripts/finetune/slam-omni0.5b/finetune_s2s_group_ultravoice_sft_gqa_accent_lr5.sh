@@ -32,8 +32,8 @@ do_layershift=false                 # if false, tokens in each layers use the sa
 # dataset settings
 dataset_name=gqa_accent
 manifest_format=parquet             # parquet or jsonl
-train_data_path="/share/nlp/tuwenming/datasets/SLAM-Omni_distill_parquet/${dataset_name}" # train data & validation data
-val_data_path="/share/nlp/tuwenming/datasets/SLAM-Omni_distill_parquet/${dataset_name}"
+train_data_path="/share/nlp/tuwenming/datasets/ultravoice160k/${dataset_name}" # train data & validation data
+val_data_path="/share/nlp/tuwenming/datasets/ultravoice160k/${dataset_name}"
 load_from_cache_file=true           # set to true if you have already generated the cache file, otherwise set to false
 
 # training settings
