@@ -64,8 +64,8 @@ exp_name="gpu${num_gpus}-btz${batch_size_training}-lr${lr}-warmup_steps${warmup_
 
 # exp_name="debug"
 wandb_entity_name=kevin-tutu
-# wandb_project_name=slam-omni-finetune
-wandb_project_name=test
+wandb_project_name=slam-omni-finetune
+# wandb_project_name=test
 
 
 home_dir=/mnt/buffer/tuwenming/checkpoints/slam-omni
