@@ -139,6 +139,7 @@ python $code_dir/inference_s2s.py \
         ++decode_config.decode_text_only=$decode_text_only \
         ++decode_config.do_layershift=$do_layershift \
         ++decode_log=$decode_log \
+        ++log_config.log_file=$decode_log/exp.log \
         ++decode_config.num_latency_tokens=$num_latency_tokens \
         ++ckpt_path=$ckpt_path/model.pt \
         ++output_text_only=$output_text_only \
