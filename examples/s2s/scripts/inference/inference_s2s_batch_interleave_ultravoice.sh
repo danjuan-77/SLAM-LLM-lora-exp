@@ -9,7 +9,7 @@ export CUDA_LAUNCH_BLOCKING=1
 code_dir=examples/s2s
 
 whisper_size=small                  # tiny base small medium large-v3
-speech_encoder_path="/valleblob/v-wenxichen/models/whisper/${whisper_size}.pt"   # replace this with your own whisper model path (different whisper size)
+speech_encoder_path="/share/nlp/tuwenming/models/openai/whisper/${whisper_size}.pt"   # replace this with your own whisper model path (different whisper size)
 llm_path="/share/nlp/tuwenming/models/Qwen/Qwen2.5-3B/"
 codec_decoder_path="/share/nlp/tuwenming/models/CosyVoice/CosyVoice-300M-SFT" # replace this with your own CosyVoice model path
 
