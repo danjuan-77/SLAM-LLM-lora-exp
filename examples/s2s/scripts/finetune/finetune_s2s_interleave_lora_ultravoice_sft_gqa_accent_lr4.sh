@@ -45,8 +45,8 @@ freeze_llm=true
 num_epochs=10
 lr=1e-4
 task_type=s2s
-warmup_steps=5500
-total_steps=55000
+warmup_steps=5000
+total_steps=50000
 gradient_accumulation_steps=1
 train_audio_embed_only=true
 
