@@ -32,13 +32,13 @@ codec_decoder_type=CosyVoice
 num_latency_tokens=0                # number of latency tokens (same as the number in training)
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
-ckpt_path=/mnt/buffer/tuwenming/checkpoints/slam-omni/gpu4-btz1-lr1e-5-warmup_steps5000-SLAM-Omni-fine-tuning-dataset-gqa_emotion/s2s_epoch_3_step_234
+ckpt_path=/mnt/buffer/tuwenming/checkpoints/slam-omni/gpu4-btz1-lr1e-5-warmup_steps5000-SLAM-Omni-fine-tuning-dataset-gqa_accent/s2s_epoch_2_step_16365
 # jsonl dataset
 # manifest_format=jsonl
 # val_data_path=/home/v-wenxichen/SLAM-LLM/examples/s2s/demo/data/${split}.jsonl
 
 # huggingface dataset
-dataset_name=emotion
+dataset_name=volume
 manifest_format=parquet
 val_data_path="/share/nlp/tuwenming/datasets/ultravoice160k/test/${dataset_name}"
 load_from_cache_file=true
