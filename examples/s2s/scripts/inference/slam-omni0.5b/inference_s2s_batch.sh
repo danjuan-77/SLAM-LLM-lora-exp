@@ -18,7 +18,7 @@ mel_size=80                         # 80 128 (128 for whisper-large only, 80 for
 llm_dim=896                         # 896 1536 2048 3584  -> 0.5B 1.5B 3B 7B
 
 task_type=s2s
-split_size=100
+split_size=0.2
 
 # vocabulary settings
 code_layer=3                        # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 
