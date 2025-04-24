@@ -141,4 +141,4 @@ python $code_dir/inference_s2s.py \
         ++speech_sample_rate=$speech_sample_rate \
         ++audio_prompt_path=$audio_prompt_path
 
-# bash ./examples/s2s/scripts/inference/slam-omni0.5b/inference_s2s_batch_wenxi.sh
+# bash ./examples/s2s/scripts/inference/slam-omni0.5b/inference_s2s_batch_emotion.sh
