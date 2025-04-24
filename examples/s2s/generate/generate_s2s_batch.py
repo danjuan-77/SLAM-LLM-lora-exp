@@ -229,10 +229,17 @@ def main(kwargs: DictConfig):
 
 				if key[-4:] == ".wav":
 					key = key[:-4]
+				key_parts = key.split("/")
+    
+				if len(key_parts) >= 2:
+					new_key = "_".join(key_parts[-2:])
+				else:
+					new_key = "_".join(key_parts[-2:])
+     
 				end_time = time.time()
 				audio_length = audio_hat.shape[1] / speech_sample_rate
 				RTF = (end_time - start_time) / audio_length
-				sf.write(f"{tone_audio_dir}/{key}.wav", audio_hat.squeeze().cpu().numpy(), speech_sample_rate)
+				sf.write(f"{tone_audio_dir}/{new_key}.wav", audio_hat.squeeze().cpu().numpy(), speech_sample_rate)
 				logger.info(f"Generated Audio: {tone_dir}/{key}.wav, audio length: {audio_length:.2f}s, generation time: {end_time - start_time:.2f}s, RTF: {RTF:.2f}")
 				RTF_llm = (end_time_llm - start_time) / audio_length
 				logger.info(f"LLM RTF: {RTF_llm:.2f}")
