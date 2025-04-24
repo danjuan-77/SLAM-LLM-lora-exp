@@ -41,7 +41,7 @@ ckpt_path=/mnt/buffer/tuwenming/checkpoints/slam-omni/wenxi/Qwen2-0.5b-whisper_s
 dataset_name=generalqa
 manifest_format=parquet
 val_data_path="/share/nlp/tuwenming/datasets/ultravoice160k/test/${dataset_name}"
-load_from_cache_file=false
+load_from_cache_file=true
 dataset_sample_seed=777
 
 # model settings
