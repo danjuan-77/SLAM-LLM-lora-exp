@@ -30,7 +30,7 @@ code_type=CosyVoice                 # CosyVoice or SNAC
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
 # dataset settings
-dataset_name=gqa_language
+dataset_name=accent
 manifest_format=parquet             # parquet or jsonl
 train_data_path="/share/nlp/tuwenming/datasets/ultravoice160k/${dataset_name}" # train data & validation data
 val_data_path="/share/nlp/tuwenming/datasets/ultravoice160k/${dataset_name}"
@@ -41,10 +41,10 @@ batch_size_training=1
 use_fp16=true
 use_peft=false
 num_epochs=10
-lr=1e-4
+lr=1e-5
 task_type=s2s
 warmup_steps=5000
-total_steps=50000
+total_steps=40000
 
 # validation settings
 validation_interval=1000
@@ -64,8 +64,8 @@ exp_name="gpu${num_gpus}-btz${batch_size_training}-lr${lr}-warmup_steps${warmup_
 
 # exp_name="debug"
 wandb_entity_name=kevin-tutu
-wandb_project_name=slam-omni-finetune
-# wandb_project_name=test
+# wandb_project_name=slam-omni-finetune
+wandb_project_name=test
 
 
 home_dir=/mnt/buffer/tuwenming/checkpoints/slam-omni
@@ -169,4 +169,4 @@ fi
 # --node_rank=$node_rank \
 # --master_addr=$master_addr \
 
-# bash examples/s2s/scripts/finetune/slam-omni0.5b/finetune_s2s_group_ultravoice_sft_gqa_lang_lr4.sh
+# bash examples/s2s/scripts/finetune/slam-omni0.5b/finetune_s2s_group_ultravoice_sft_gqa_accent_lr5.sh
