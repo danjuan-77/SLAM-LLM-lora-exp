@@ -30,7 +30,7 @@ code_type=CosyVoice                 # CosyVoice or SNAC
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
 # dataset settings
-dataset_name=gqa_accent
+dataset_name=language
 manifest_format=parquet             # parquet or jsonl
 train_data_path="/share/nlp/tuwenming/datasets/ultravoice160k/${dataset_name}" # train data & validation data
 val_data_path="/share/nlp/tuwenming/datasets/ultravoice160k/${dataset_name}"
@@ -169,4 +169,4 @@ fi
 # --node_rank=$node_rank \
 # --master_addr=$master_addr \
 
-# bash examples/s2s/scripts/finetune/slam-omni0.5b/finetune_s2s_group_ultravoice_sft_gqa_accent_lr5.sh
+# bash examples/s2s/scripts/finetune/slam-omni0.5b/finetune_s2s_group_ultravoice_sft_gqa_lang_lr5.sh
