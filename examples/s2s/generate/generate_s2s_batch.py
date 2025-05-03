@@ -231,10 +231,10 @@ def main(kwargs: DictConfig):
 					key = key[:-4]
 				key_parts = key.split("/")
     
-				if len(key_parts) >= 2:
-					new_key = "_".join(key_parts[-2:])
+				if len(key_parts) >= 2:  # 'path': 'wav/instructions/emotion/angry/ultrachat_190910.wav', 根据path构建输出文件名
+					new_key = "_".join(key_parts[-3:])
 				else:
-					new_key = "_".join(key_parts[-2:])
+					new_key = "_".join(key_parts[-3:])
      
 				end_time = time.time()
 				audio_length = audio_hat.shape[1] / speech_sample_rate

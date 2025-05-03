@@ -38,7 +38,7 @@ ckpt_path=/mnt/buffer/tuwenming/checkpoints/slam-omni/wenxi/Qwen2-0.5b-whisper_s
 # val_data_path=/home/v-wenxichen/SLAM-LLM/examples/s2s/demo/data/${split}.jsonl
 
 # huggingface dataset
-dataset_name=emotion
+dataset_name=emotion_test
 manifest_format=parquet
 val_data_path="/share/nlp/tuwenming/datasets/ultravoice160k/test/${dataset_name}"
 load_from_cache_file=true
