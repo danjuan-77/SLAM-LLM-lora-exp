@@ -38,7 +38,7 @@ ckpt_path=/mnt/buffer/tuwenming/checkpoints/slam-omni/gpu4-btz1-lr1e-5-warmup_st
 # val_data_path=/home/v-wenxichen/SLAM-LLM/examples/s2s/demo/data/${split}.jsonl
 
 # huggingface dataset
-dataset_name=volume_test
+dataset_name=accent_test
 manifest_format=parquet
 val_data_path="/share/nlp/tuwenming/datasets/ultravoice160k/test/${dataset_name}"
 load_from_cache_file=true
@@ -141,4 +141,4 @@ python $code_dir/inference_s2s.py \
         ++speech_sample_rate=$speech_sample_rate \
         ++audio_prompt_path=$audio_prompt_path
 
-# bash ./examples/s2s/scripts/inference/slam-omni0.5b/inference_s2s_batch_emotion.sh
+# bash ./examples/s2s/scripts/inference/slam-omni0.5b/inference_s2s_batch_accent.sh
