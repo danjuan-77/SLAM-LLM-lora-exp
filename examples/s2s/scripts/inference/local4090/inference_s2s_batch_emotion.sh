@@ -18,7 +18,7 @@ mel_size=80                         # 80 128 (128 for whisper-large only, 80 for
 llm_dim=896                         # 896 1536 2048 3584  -> 0.5B 1.5B 3B 7B
 
 task_type=s2s
-split_size=0.2
+split_size=0.9
 
 # vocabulary settings
 code_layer=3                        # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 
@@ -32,13 +32,13 @@ codec_decoder_type=CosyVoice
 num_latency_tokens=0                # number of latency tokens (same as the number in training)
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
-ckpt_path=/home/tuwenming/Projects/SLAM-LLM-lora-exp/ckpt/slamomni_sft_accent
+ckpt_path=/home/tuwenming/Projects/SLAM-LLM-lora-exp/ckpt/slamomni_sft_emotion/s2s_epoch_3_step_234
 # jsonl dataset
 # manifest_format=jsonl
 # val_data_path=/home/v-wenxichen/SLAM-LLM/examples/s2s/demo/data/${split}.jsonl
 
 # huggingface dataset
-dataset_name=accent_test
+dataset_name=emotion_gen_test
 manifest_format=parquet
 val_data_path="/home/tuwenming/Datasets/ultravoice160k/test/${dataset_name}"
 # val_data_path=/home/tuwenming/Datasets/SLAM-Omni_distill_parquet/emotion_gen
