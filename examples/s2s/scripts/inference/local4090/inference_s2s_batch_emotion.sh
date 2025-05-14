@@ -38,9 +38,11 @@ ckpt_path=/home/tuwenming/Projects/SLAM-LLM-lora-exp/ckpt/slamomni_sft_emotion/s
 # val_data_path=/home/v-wenxichen/SLAM-LLM/examples/s2s/demo/data/${split}.jsonl
 
 # huggingface dataset
-dataset_name=emotion_gen_test
+# dataset_name=tiny_ultravoice
+dataset_name=emotion_test
 manifest_format=parquet
 val_data_path="/home/tuwenming/Datasets/ultravoice160k/test/${dataset_name}"
+# val_data_path="/home/tuwenming/Projects/SLAM-LLM-lora-exp/${dataset_name}"
 # val_data_path=/home/tuwenming/Datasets/SLAM-Omni_distill_parquet/emotion_gen
 load_from_cache_file=true
 dataset_sample_seed=777
@@ -51,7 +53,7 @@ group_decode_adapter_type=linear
 
 # decode config
 text_repetition_penalty=1.2
-audio_repetition_penalty=1.2        # default 1.0, set to 1.2 for reduce silence
+audio_repetition_penalty=2        # default 1.0, set to 1.2 for reduce silence
 max_new_tokens=3000                 # 500 for SNAC, 3000 for CosyVoice-single
 do_sample=false
 top_p=1.0

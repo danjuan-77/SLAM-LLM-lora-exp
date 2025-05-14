@@ -44,7 +44,7 @@ num_epochs=10
 lr=1e-5
 task_type=s2s
 warmup_steps=5000
-total_steps=40000
+total_steps=100000
 
 # validation settings
 validation_interval=1000
