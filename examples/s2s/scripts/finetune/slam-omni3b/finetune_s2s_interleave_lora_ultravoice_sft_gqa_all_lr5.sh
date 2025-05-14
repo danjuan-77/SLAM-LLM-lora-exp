@@ -58,7 +58,7 @@ lora_alpha=$((lora_r * 2))
 
 # validation settings
 validation_interval=1000
-split_size=0.01
+split_size=0.001
 
 exp_name="gpu${num_gpus}-btz${batch_size_training}-lr${lr}-warmup_steps${warmup_steps}-interleave_text${interleaved_text_token_num}_audio${interleaved_audio_token_num}-Qwen2.5-3b-gradient_accumulation${gradient_accumulation_steps}-lora-audio_embed_only-lora_rank${lora_r}-alpha${lora_alpha}-dataset-${dataset_name}"
 # exp_name="debug"
