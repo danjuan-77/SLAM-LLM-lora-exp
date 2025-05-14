@@ -47,7 +47,7 @@ num_epochs=10
 lr=1e-5
 task_type=s2s
 warmup_steps=5000
-total_steps=50000
+total_steps=100000
 gradient_accumulation_steps=1
 train_audio_embed_only=true
 
