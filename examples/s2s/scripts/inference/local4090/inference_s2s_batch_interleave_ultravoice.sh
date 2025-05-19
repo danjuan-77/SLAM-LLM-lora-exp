@@ -39,7 +39,8 @@ do_layershift=false                 # if false, tokens in each layers use the sa
 
 # ckpt_path=/valleblob/v-wenxichen/exp/s2s-interleave/gpu4-btz1-lr1e-4-interleave_text12_audio36-Qwen2.5-3b-instruct-gradient_accumulation2-lora-audio_embed_only-lora_rank1024-alpha2048/s2s_epoch_3_step_68390
 # ckpt_path=/mnt/buffer/tuwenming/checkpoints/slam-omni-3b/gpu4-btz1-lr1e-4-warmup_steps5000-interleave_text12_audio36-Qwen2.5-3b-gradient_accumulation1-lora-audio_embed_only-lora_rank384-alpha768/s2s_epoch_1_step_10000
-ckpt_path=/home/tuwenming/Projects/SLAM-LLM-lora-exp/ckpt/slamomni_3b_emotion
+# ckpt_path=/home/tuwenming/Projects/SLAM-LLM-lora-exp/ckpt/slamomni_3b_sft_all/s2s_epoch_1_step_9000
+ckpt_path=/home/tuwenming/Projects/SLAM-LLM-lora-exp/ckpt/slamomni_3b_base
 # PEFT settings
 use_peft=true
 lora_r=384
@@ -52,9 +53,9 @@ lora_alpha=$((lora_r * 2))
 # huggingface dataset
 manifest_format=parquet
 # DATASET_NAME=emotion_test # llama_qa trivia_qa web_qa
-DATASET_NAME=emotion_gen # llama_qa trivia_qa web_qa
+DATASET_NAME=emotion_test # llama_qa trivia_qa web_qa
 val_data_path="/home/tuwenming/Datasets/ultravoice160k/test/${DATASET_NAME}"        # llama-questions speech-triavia-qa speech-web-questions
-val_data_path="/home/tuwenming/Datasets/SLAM-Omni_distill_parquet/${DATASET_NAME}"
+# val_data_path="/home/tuwenming/Datasets/SLAM-Omni_distill_parquet/${DATASET_NAME}"
 load_from_cache_file=true
 cache_dir=/home/tuwenming/.cache/huggingface/datasets/$DATASET_NAME
 
@@ -63,7 +64,7 @@ modeling_paradigm=interleaved
 interleaved_text_token_num=12
 interleaved_audio_token_num=36
 text_repetition_penalty=1.2
-audio_repetition_penalty=1.2        # default 1.0, set to 1.2 for reduce silence
+audio_repetition_penalty=5        # default 1.0, set to 1.2 for reduce silence
 max_new_tokens=3000                 # 500 for SNAC, 3000 for CosyVoice-single
 do_sample=false
 top_p=1.0

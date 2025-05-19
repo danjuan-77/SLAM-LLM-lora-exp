@@ -39,7 +39,7 @@ ckpt_path=/home/tuwenming/Projects/SLAM-LLM-lora-exp/ckpt/slamomni_sft_all/s2s_e
 
 # huggingface dataset
 # dataset_name=tiny_ultravoice
-dataset_name=emotion_test
+dataset_name=language_test
 manifest_format=parquet
 val_data_path="/home/tuwenming/Datasets/ultravoice160k/test/${dataset_name}"
 # val_data_path="/home/tuwenming/Projects/SLAM-LLM-lora-exp/${dataset_name}"
