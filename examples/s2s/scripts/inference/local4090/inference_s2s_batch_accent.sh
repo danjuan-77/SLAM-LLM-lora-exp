@@ -18,7 +18,7 @@ mel_size=80                         # 80 128 (128 for whisper-large only, 80 for
 llm_dim=896                         # 896 1536 2048 3584  -> 0.5B 1.5B 3B 7B
 
 task_type=s2s
-split_size=0.9
+# split_size=0.9
 
 # vocabulary settings
 code_layer=3                        # 1 single semantic code layer   2 3 4 5 6 7 8 group semantic code layers 
@@ -32,16 +32,16 @@ codec_decoder_type=CosyVoice
 num_latency_tokens=0                # number of latency tokens (same as the number in training)
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
-ckpt_path=/home/tuwenming/Projects/SLAM-LLM-lora-exp/ckpt/slamomni_sft_all/s2s_epoch_2_step_37992
+ckpt_path=/home/tuwenming/Projects/SLAM-LLM-lora-exp/ckpt/slamomni_base
 # jsonl dataset
 # manifest_format=jsonl
 # val_data_path=/home/v-wenxichen/SLAM-LLM/examples/s2s/demo/data/${split}.jsonl
 
 # huggingface dataset
 # dataset_name=tiny_ultravoice
-dataset_name=accent_test
+dataset_name=description
 manifest_format=parquet
-val_data_path="/home/tuwenming/Datasets/ultravoice160k/test/${dataset_name}"
+val_data_path="/home/tuwenming/Projects/UltraVoice_dev/data/ultravoice100k_testset/${dataset_name}"
 # val_data_path="/home/tuwenming/Projects/SLAM-LLM-lora-exp/${dataset_name}"
 # val_data_path=/home/tuwenming/Datasets/SLAM-Omni_distill_parquet/emotion_gen
 load_from_cache_file=true
@@ -105,7 +105,6 @@ python $code_dir/inference_s2s.py \
         ++dataset_config.mel_size=$mel_size \
         ++dataset_config.inference_mode=true \
         ++dataset_config.manifest_format=$manifest_format \
-        ++dataset_config.split_size=$split_size \
         ++dataset_config.load_from_cache_file=$load_from_cache_file \
         ++dataset_config.task_type=$task_type \
         ++dataset_config.seed=$dataset_sample_seed \
@@ -144,4 +143,4 @@ python $code_dir/inference_s2s.py \
         ++speech_sample_rate=$speech_sample_rate \
         ++audio_prompt_path=$audio_prompt_path
 
-# bash ./examples/s2s/scripts/inference/local4090/inference_s2s_batch_emotion.sh
+# bash ./examples/s2s/scripts/inference/local4090/inference_s2s_batch_accent.sh

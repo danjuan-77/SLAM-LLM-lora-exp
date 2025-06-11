@@ -9,7 +9,7 @@ from utils.snac_utils import layershift, get_snac_answer_token, simple_shift
 from utils.codec_utils import get_single_layer_answer_token, get_group_answer_token
 from utils.dataset_utils import get_first_existing_value
 import librosa
-
+import ipdb
 
 class SpeechDatasetJsonl(torch.utils.data.Dataset):
     
@@ -100,14 +100,14 @@ class SpeechDatasetJsonl(torch.utils.data.Dataset):
             else:
                 ds = load_from_disk(dataset_config.train_data_path)   # load_from local disk
 
-            if split == "train" or (split in ["val", "test"] and split not in ds):
+            if split == "train" or (split in ["val"] and split not in ds):
                 train_val_split = ds['train'].train_test_split(test_size=self.split_size, seed=self.seed)
                 if split == "train":
                     self.data_list = train_val_split['train']
                 else:
                     self.data_list = train_val_split['test']
             elif split == "test":
-                self.data_list = ds['test']
+                self.data_list = ds['train']
 
         elif self.manifest_format == "jsonl":
             if split == "train":
