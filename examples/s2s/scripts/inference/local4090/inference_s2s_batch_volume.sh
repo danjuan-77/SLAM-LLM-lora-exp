@@ -32,16 +32,16 @@ codec_decoder_type=CosyVoice
 num_latency_tokens=0                # number of latency tokens (same as the number in training)
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
-ckpt_path=/home/tuwenming/Projects/SLAM-LLM-lora-exp/ckpt/slamomni_sft_all/s2s_epoch_2_step_37992
+ckpt_path=/home/tuwenming/Projects/SLAM-LLM-lora-exp/ckpt/slamomni_base
 # jsonl dataset
 # manifest_format=jsonl
 # val_data_path=/home/v-wenxichen/SLAM-LLM/examples/s2s/demo/data/${split}.jsonl
 
 # huggingface dataset
 # dataset_name=tiny_ultravoice
-dataset_name=volume_test
+dataset_name=volume
 manifest_format=parquet
-val_data_path="/home/tuwenming/Datasets/ultravoice160k/test/${dataset_name}"
+val_data_path="/home/tuwenming/Projects/UltraVoice_dev/data/ultravoice100k_testset/${dataset_name}"
 # val_data_path="/home/tuwenming/Projects/SLAM-LLM-lora-exp/${dataset_name}"
 # val_data_path=/home/tuwenming/Datasets/SLAM-Omni_distill_parquet/emotion_gen
 load_from_cache_file=true

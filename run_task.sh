@@ -6,7 +6,7 @@ bash examples/s2s/scripts/inference/local4090/inference_s2s_batch_emotion.sh
 
 bash examples/s2s/scripts/inference/local4090/inference_s2s_batch_speed.sh
 
-bash examples/s2s/scripts/inference/local4090/inference_s2s_batch_style.sh
+bash examples/s2s/scripts/inference/local4090/inference_s2s_batch_lang.sh
 
 bash examples/s2s/scripts/inference/local4090/inference_s2s_batch_volume.sh
 
