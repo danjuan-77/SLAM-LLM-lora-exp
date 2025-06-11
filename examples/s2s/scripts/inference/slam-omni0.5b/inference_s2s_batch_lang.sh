@@ -50,7 +50,7 @@ group_decode_adapter_type=linear
 
 # decode config
 text_repetition_penalty=1.2
-audio_repetition_penalty=1.2        # default 1.0, set to 1.2 for reduce silence
+audio_repetition_penalty=3       # default 1.0, set to 1.2 for reduce silence
 max_new_tokens=3000                 # 500 for SNAC, 3000 for CosyVoice-single
 do_sample=false
 top_p=1.0
