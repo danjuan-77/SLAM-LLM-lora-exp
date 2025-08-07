@@ -2,20 +2,20 @@
 
 # GPU 3 任务列表 (共 15 个任务)
 
-# 任务: s2s_epoch_1_step_1000 - emotion
-echo "开始运行任务: s2s_epoch_1_step_1000 - emotion"
-bash scripts/inference_s2s_epoch_1_step_1000_emotion.sh
-echo "任务完成: s2s_epoch_1_step_1000 - emotion"
+# # 任务: s2s_epoch_1_step_1000 - emotion
+# echo "开始运行任务: s2s_epoch_1_step_1000 - emotion"
+# bash scripts/inference_s2s_epoch_1_step_1000_emotion.sh
+# echo "任务完成: s2s_epoch_1_step_1000 - emotion"
 
-# 任务: s2s_epoch_1_step_5000 - volume
-echo "开始运行任务: s2s_epoch_1_step_5000 - volume"
-bash scripts/inference_s2s_epoch_1_step_5000_volume.sh
-echo "任务完成: s2s_epoch_1_step_5000 - volume"
+# # 任务: s2s_epoch_1_step_5000 - volume
+# echo "开始运行任务: s2s_epoch_1_step_5000 - volume"
+# bash scripts/inference_s2s_epoch_1_step_5000_volume.sh
+# echo "任务完成: s2s_epoch_1_step_5000 - volume"
 
-# 任务: s2s_epoch_1_step_5000 - accent
-echo "开始运行任务: s2s_epoch_1_step_5000 - accent"
-bash scripts/inference_s2s_epoch_1_step_5000_accent.sh
-echo "任务完成: s2s_epoch_1_step_5000 - accent"
+# # 任务: s2s_epoch_1_step_5000 - accent
+# echo "开始运行任务: s2s_epoch_1_step_5000 - accent"
+# bash scripts/inference_s2s_epoch_1_step_5000_accent.sh
+# echo "任务完成: s2s_epoch_1_step_5000 - accent"
 
 # 任务: s2s_epoch_1_step_10000 - emotion
 echo "开始运行任务: s2s_epoch_1_step_10000 - emotion"
