@@ -52,19 +52,33 @@
 # bash scripts/inference_s2s_epoch_2_step_10096_language.sh
 # echo "任务完成: s2s_epoch_2_step_10096 - language"
 
-# 任务: s2s_epoch_2_step_15096 - speed
-echo "开始运行任务: s2s_epoch_2_step_15096 - speed"
-bash scripts/inference_s2s_epoch_2_step_15096_speed.sh
-echo "任务完成: s2s_epoch_2_step_15096 - speed"
+# # 任务: s2s_epoch_2_step_15096 - speed
+# echo "开始运行任务: s2s_epoch_2_step_15096 - speed"
+# bash scripts/inference_s2s_epoch_2_step_15096_speed.sh
+# echo "任务完成: s2s_epoch_2_step_15096 - speed"
 
-# 任务: s2s_epoch_2_step_15096 - description
-echo "开始运行任务: s2s_epoch_2_step_15096 - description"
-bash scripts/inference_s2s_epoch_2_step_15096_description.sh
-echo "任务完成: s2s_epoch_2_step_15096 - description"
+# # 任务: s2s_epoch_2_step_15096 - description
+# echo "开始运行任务: s2s_epoch_2_step_15096 - description"
+# bash scripts/inference_s2s_epoch_2_step_15096_description.sh
+# echo "任务完成: s2s_epoch_2_step_15096 - description"
 
-# 任务: s2s_epoch_2_step_20096 - language
-echo "开始运行任务: s2s_epoch_2_step_20096 - language"
-bash scripts/inference_s2s_epoch_2_step_20096_language.sh
-echo "任务完成: s2s_epoch_2_step_20096 - language"
+# # 任务: s2s_epoch_2_step_20096 - language
+# echo "开始运行任务: s2s_epoch_2_step_20096 - language"
+# bash scripts/inference_s2s_epoch_2_step_20096_language.sh
+# echo "任务完成: s2s_epoch_2_step_20096 - language"
 
 
+# 任务: s2s_epoch_2_step_20096 - volume
+echo "开始运行任务: s2s_epoch_2_step_20096 - volume"
+bash scripts/inference_s2s_epoch_2_step_20096_volume.sh
+echo "任务完成: s2s_epoch_2_step_20096 - volume"
+
+# 任务: s2s_epoch_2_step_20096 - accent
+echo "开始运行任务: s2s_epoch_2_step_20096 - accent"
+bash scripts/inference_s2s_epoch_2_step_20096_accent.sh
+echo "任务完成: s2s_epoch_2_step_20096 - accent"
+
+# 任务: s2s_epoch_2_step_20096 - emotion
+echo "开始运行任务: s2s_epoch_2_step_20096 - emotion"
+bash scripts/inference_s2s_epoch_2_step_20096_emotion.sh
+echo "任务完成: s2s_epoch_2_step_20096 - emotion"
