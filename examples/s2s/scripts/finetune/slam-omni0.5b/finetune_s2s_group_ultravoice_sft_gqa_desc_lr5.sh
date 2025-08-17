@@ -30,10 +30,10 @@ code_type=CosyVoice                 # CosyVoice or SNAC
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
 # dataset settings
-dataset_name=gqa_desc
+dataset_name=description_gqa
 manifest_format=parquet             # parquet or jsonl
-train_data_path="/share/nlp/tuwenming/datasets/ultravoice160k/${dataset_name}" # train data & validation data
-val_data_path="/share/nlp/tuwenming/datasets/ultravoice160k/${dataset_name}"
+train_data_path="/share/nlp/tuwenming/datasets/ultravoice100k/train_single_with_gqa/${dataset_name}" # train data & validation data
+val_data_path="/share/nlp/tuwenming/datasets/ultravoice100k/train_single_with_gqa/${dataset_name}"
 load_from_cache_file=true           # set to true if you have already generated the cache file, otherwise set to false
 
 # training settings
@@ -60,7 +60,7 @@ group_decode_adapter_type=linear
 #     exp_name="s2s_train_v4-${llm_name}-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-fp16-epochs${num_epochs}-whisper_${whisper_size}-latency${num_latency_tokens}-group${code_layer}"
 # fi
 
-exp_name="gpu${num_gpus}-btz${batch_size_training}-lr${lr}-warmup_steps${warmup_steps}-SLAM-Omni-fine-tuning-dataset-${dataset_name}"
+exp_name="gpu${num_gpus}-btz${batch_size_training}-lr${lr}-warmup_steps${warmup_steps}-SLAM-Omni-fine-tuning-dataset-ultravoice100k-${dataset_name}"
 
 # exp_name="debug"
 wandb_entity_name=kevin-tutu
