@@ -32,7 +32,7 @@ codec_decoder_type=CosyVoice
 num_latency_tokens=0                # number of latency tokens (same as the number in training)
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
-ckpt_path=/mnt/buffer/tuwenming/checkpoints/slam-omni/gpu4-btz1-lr1e-5-warmup_steps5000-SLAM-Omni-fine-tuning-dataset-ultravoice100k-train_without_gqa/s2s_epoch_3_step_894
+ckpt_path=/mnt/buffer/tuwenming/checkpoints/slam-omni/gpu4-btz1-lr1e-5-warmup_steps5000-SLAM-Omni-fine-tuning-dataset-ultravoice100k-description_without_gqa/s2s_epoch_3_step_950
 # jsonl dataset
 # manifest_format=jsonl
 # val_data_path=/home/v-wenxichen/SLAM-LLM/examples/s2s/demo/data/${split}.jsonl

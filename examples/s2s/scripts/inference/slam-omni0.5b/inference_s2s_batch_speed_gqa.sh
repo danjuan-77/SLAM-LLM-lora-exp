@@ -32,7 +32,7 @@ codec_decoder_type=CosyVoice
 num_latency_tokens=0                # number of latency tokens (same as the number in training)
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
-ckpt_path=/mnt/buffer/tuwenming/checkpoints/slam-omni/gpu4-btz1-lr1e-5-warmup_steps5000-SLAM-Omni-fine-tuning-dataset-ultravoice100k-speed_without_gqa/s2s_epoch_3_step_928
+ckpt_path=/mnt/buffer/tuwenming/checkpoints/slam-omni/gpu4-btz1-lr1e-5-warmup_steps5000-SLAM-Omni-fine-tuning-dataset-ultravoice100k-speed_gqa/s2s_epoch_2_step_3113
 # jsonl dataset
 # manifest_format=jsonl
 # val_data_path=/home/v-wenxichen/SLAM-LLM/examples/s2s/demo/data/${split}.jsonl
@@ -141,4 +141,4 @@ python $code_dir/inference_s2s.py \
         ++speech_sample_rate=$speech_sample_rate \
         ++audio_prompt_path=$audio_prompt_path
 
-# nohup bash ./examples/s2s/scripts/inference/slam-omni0.5b/inference_s2s_batch_speed.sh > /share/nlp/tuwenming/projects/UltraVoice_dev/logs/run_task_slamomni_inference_gpu0_$(date +%Y%m%d%H%M%S).log 2>&1 &
+# nohup bash ./examples/s2s/scripts/inference/slam-omni0.5b/inference_s2s_batch_speed_gqa.sh > /share/nlp/tuwenming/projects/UltraVoice_dev/logs/run_task_slamomni_inference_gpu0_$(date +%Y%m%d%H%M%S).log 2>&1 &
