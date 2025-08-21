@@ -32,8 +32,8 @@ do_layershift=false                 # if false, tokens in each layers use the sa
 # dataset settings
 dataset_name=train_without_gqa
 manifest_format=parquet             # parquet or jsonl
-train_data_path="/share/nlp/tuwenming/datasets/ultravoice100k/${dataset_name}" # train data & validation data
-val_data_path="/share/nlp/tuwenming/datasets/ultravoice100k/${dataset_name}"
+train_data_path="/share/nlp/tuwenming/datasets/ultravoice100k_clean/${dataset_name}" # train data & validation data
+val_data_path="/share/nlp/tuwenming/datasets/ultravoice100k_clean/${dataset_name}"
 load_from_cache_file=true           # set to true if you have already generated the cache file, otherwise set to false
 
 # training settings
@@ -60,7 +60,7 @@ group_decode_adapter_type=linear
 #     exp_name="s2s_train_v4-${llm_name}-gpu${num_gpus}-btz${batch_size_training}-lr${lr}-fp16-epochs${num_epochs}-whisper_${whisper_size}-latency${num_latency_tokens}-group${code_layer}"
 # fi
 
-exp_name="gpu${num_gpus}-btz${batch_size_training}-lr${lr}-warmup_steps${warmup_steps}-SLAM-Omni-fine-tuning-dataset-ultravoice100k-${dataset_name}"
+exp_name="gpu${num_gpus}-btz${batch_size_training}-lr${lr}-warmup_steps${warmup_steps}-SLAM-Omni-fine-tuning-dataset-ultravoice100k_clean-${dataset_name}"
 
 # exp_name="debug"
 wandb_entity_name=kevin-tutu
@@ -169,4 +169,4 @@ fi
 # --node_rank=$node_rank \
 # --master_addr=$master_addr \
 
-# bash examples/s2s/scripts/finetune/slam-omni0.5b/finetune_s2s_group_ultravoice_sft_all_without_gqa_lr5.sh
+# nohup bash examples/s2s/scripts/finetune/slam-omni0.5b/finetune_s2s_group_ultravoice_sft_all_without_gqa_lr5.sh > /share/nlp/tuwenming/projects/UltraVoice_dev/logs/run_task_slamomni_sft_all_without_gqa_$(date +%Y%m%d%H%M%S).log 2>&1 &
