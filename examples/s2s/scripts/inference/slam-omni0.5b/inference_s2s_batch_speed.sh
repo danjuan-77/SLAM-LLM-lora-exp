@@ -1,5 +1,5 @@
 #!/bin/bash
-export CUDA_VISIBLE_DEVICES=1
+export CUDA_VISIBLE_DEVICES=0
 export TOKENIZERS_PARALLELISM=false
 export OMP_NUM_THREADS=1
 export PYDEVD_WARN_SLOW_RESOLVE_TIMEOUT=2
@@ -32,15 +32,15 @@ codec_decoder_type=CosyVoice
 num_latency_tokens=0                # number of latency tokens (same as the number in training)
 do_layershift=false                 # if false, tokens in each layers use the same codebook, otherwise, use different codebooks
 
-ckpt_path=/mnt/buffer/kangyipeng/checkpoints/slam-omni/gpu4-btz1-lr1e-5-warmup_steps5000-SLAM-Omni-fine-tuning-dataset-ultravoice100k_clean-train_all/s2s_epoch_3_step_306
+ckpt_path=/mnt/buffer/tuwenming/checkpoints/slam-omni/gpu4-btz1-lr1e-5-warmup_steps5000-SLAM-Omni-fine-tuning-dataset-ultravoice100k_clean-speed/s2s_epoch_3_step_1032/
 # jsonl dataset
 # manifest_format=jsonl
 # val_data_path=/home/v-wenxichen/SLAM-LLM/examples/s2s/demo/data/${split}.jsonl
 
 # huggingface dataset
-dataset_name=speed
+dataset_name=speed_test
 manifest_format=parquet
-val_data_path="/share/nlp/tuwenming/projects/UltraVoice_dev/data/slam_omni_parquet/test/${dataset_name}"
+val_data_path="/share/nlp/tuwenming/datasets/ultravoice100k_clean/test/${dataset_name}"
 load_from_cache_file=true
 dataset_sample_seed=777
 
